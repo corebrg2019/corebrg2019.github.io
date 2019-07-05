@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="no-cache">
+		
+		<title>ITAhM</title>
+		
+		<style>
+@import "css/itahm.css";
+
+body {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	background: url("img/world.png") no-repeat center center fixed;
+	background-size: cover;
+	display: flex;
+}
+
+body:not(.background)::before {
+	content: "";
+	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+	background-color: rgba(0, 0, 0, 0.8);
+	z-index: -1;
+}
+
+body, input, button {
+	margin: 0;
+	padding: 0; 
+}
+
+article {
+	flex: 1 1 auto;
+	position: relative;
+}
+
+aside {
+	position: absolute; top: 0; bottom: 0; left: 0;
+	display: flex; flex-direction: column;
+	pointer-events: none;
+	width: 300px;
+	box-sizing: border-box;
+	padding: .5em;
+	color: #fff;
+	text-shadow: 1px 1px 1px #000;
+}
+
+ul {
+	list-style: none;
+	padding: 0; margin: 0;
+}
+
+aside> .top {
+	flex: none;
+	height: 140px;
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
+}
+
+#summary_list {
+	position: relative;
+	overflow-y: auto;
+	pointer-events: auto;
+}
+
+.list {
+	padding: .5em 1em;
+}
+
+.summary {
+	display: flex;
+	justify-content: space-between;
+	font-weight: bold;
+	margin: 3px 0;
+	padding: 0.5em;
+	background-color: rgba(255, 255, 255, 0.1);
+}
+
+.summary> li:first-child {
+	width: 120px;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+header {
+	flex: none;
+	margin-bottom: 1em;
+	text-align: center;
+}
+
+header> ul {
+	display: flex;
+}
+
+header> ul> li {
+	padding: .5em;
+	border-radius: 10px 10px 0 0;
+	box-shadow: 0 0 5px #fff inset;
+	flex: 1;
+}
+
+header> ul> li:nth-child(1) {
+	background-color: #f00;
+}
+
+header> ul> li:nth-child(2) {
+	background-color: #fc0;
+}
+
+header> ul> li:nth-child(3) {
+	background-color: #0f0;
+}
+
+#map {
+	border: none;
+	width: 100%; height: 100%;
+}
+
+iframe.top {
+	flex: none;
+	width: 320px;
+	border: none;
+}
+
+div.nav {
+	flex: none;
+	pointer-events: all;
+	cursor: pointer;
+}
+
+div.nav::after {
+	content: "\2796";
+}
+
+div.nav.hide::after {
+	content: "\2795";
+}
+
+div.nav.hide +#summary_list {
+	display: none;
+}
+
+/* bounce >> */
+.bounce {
+	position: relative;
+	width: 60px;
+	height: 120px;
+	color: #fff;
+	font-weight: bold;
+}
+
+.ball {
+	border-radius: 50%;
+	box-shadow: inset 0 -5px 15px rgba(255,255,255,0.4), inset -2px -1px 40px rgba(0,0,0,0.4), 0 0 1px #000;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.bounce >.ball {
+	position: absolute; top: 0; left: 0;
+	width: 100%;
+	height: 50%;
+	animation: bounce 10s infinite;
+}
+
+.summary >.ball {
+	position: relative;
+	width: 40px; height: 40px;
+}
+
+.green.ball {
+	background-color: #0f0;
+}
+
+.orange.ball {
+	background-color: #ffa500;
+}
+
+.bounce >.orange.ball {
+	animation-delay: .5s;
+}
+
+.red.ball {
+	background: #f00;
+}
+
+.bounce >.red.ball {
+	animation-delay: 1s;
+}
+
+.ball:before {
+	content: "";
+	position: absolute;
+	width: 50%;
+	height: 25%;
+	border-radius: 50%;
+	left: 25%;
+	top: 5%;
+	background: linear-gradient(to bottom, rgba(232,232,232,1), rgba(255,255,255,0));
+}
+/*
+.ball::after {
+	content: attr(data-value);
+}
+*/
+.bounce div:last-child {
+	position: absolute; bottom: 0;
+	width: 100%;
+	height: 20%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.bounce div:last-child::after {
+	content: "";
+	width: 100%;
+	height: 80%;
+	border-radius: 50%;
+	background: rgba(100, 100, 100, 0.5);
+	animation: shadow 1s;
+	z-index: -1;
+}
+
+@keyframes bounce {
+	0% {
+		top: 0;
+		animation-timing-function: ease-in;
+	}
+	4% {
+		top: 40%;
+		height: 50%;
+		animation-timing-function: ease-out;
+	}
+	5% {
+		top: 45%;
+		height: 45%;
+		animation-timing-function: ease-in;
+	}
+	6% {
+		top: 30%;
+		height: 50%;
+		animation-timing-function: ease-out;
+	}
+	10% {
+		top: 0;
+		animation-timing-function: ease-in;
+	}
+}
+
+@keyframes shadow {
+	0% {
+		background: rgba(20, 20, 20, .1);
+		animation-timing-function: ease-in;
+	}
+	50% {
+		background: rgba(20, 20, 20, .3);
+		height: 40%;
+		width: 80%;
+		animation-timing-function: ease-out;
+	}
+	100% {
+		background: rgba(20, 20, 20, .1);
+		animation-timing-function: ease-in;
+	}
+}
+
+/* << bounce */
+
+/* 공통 */
+.fullscreen {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+}
+
+		</style>
+		<script>
+// public
+
+function moveStage(id) {
+	top.store.parent = id || undefined;
+
+	window.location.reload();
+}
+		
+		</script>
+	</head>
+	
+	<body class="loading name">
+		<article>
+			<aside>
+				<header>
+					<ul>
+						<li>장애
+						<li>임계
+						<li>정상
+					</ul>
+				</header>
+				
+				<div class="top">
+					<div class="bounce">
+						<div id="alert" class="ball red"></div>
+						<div></div>
+					</div>
+					<div class="bounce">
+						<div id="critical"  class="ball orange"></div>
+						<div></div>
+					</div>
+					<div class="bounce">
+						<div id="normal"  class="ball green"></div>
+						<div></div>
+					</div>
+				</div>
+				<div class="nav"></div>
+				<div id="summary_list"></div>	
+			</aside>
+			<iframe id="map"></iframe>
+		</article>
+		
+		<iframe class="top"></iframe>
+
+		<script>
+
+var
+	upper = top.store.parent,
+	topList = [];
+
+(delay => {
+	var timer, id;
+
+	window.onEvent = event => {
+		if (timer) {
+			clearTimeout(timer);
+		}
+
+		if ("id" in event) {
+			id = event.id;
+		}
+		
+		timer = setTimeout(() => {
+			requestAnimationFrame(t => {
+				top.store.focus = id;
+
+				window.location.reload();
+			});
+		}, delay);
+	};
+}) (1000);
+
+if (top.setting.background) {
+	document.body.style.backgroundImage = "url("+ top.setting.background +")";
+
+	document.body.classList.add("background");
+}
+
+document.body.querySelector("div.nav").onclick = function (e) {
+	this.classList.toggle("hide");
+}
+
+function findParentFromStage(parent) {
+	for (let tmp; parent; parent = tmp) {
+		if (!(parent in window.position)) {
+			return;
+		}
+
+		tmp = window.position[parent].parent;
+		
+		if (tmp === window.upper) {
+			return parent;
+		}
+	}
+}
+
+(() => {
+	const labelMap = {};
+
+	function createStatusItem(label, count) {
+		const ul = document.createElement("ul");
+
+		ul.appendChild(document.createElement("li")).textContent = label;
+		ul.appendChild(document.createElement("li")).textContent = count.shutdown;
+		ul.appendChild(document.createElement("li")).textContent = count.critical;
+		ul.appendChild(document.createElement("li")).textContent = count.normal;
+		
+		ul.className = "summary";
+		
+		return ul;
+	}
+
+	window.parseLabel = (label, status) => {
+		if (label) {
+			label.split(",").forEach(function (label) {
+				if (!(label in labelMap)) {
+					labelMap[label] = {
+						shutdown: 0,
+						critical: 0,
+						normal: 0
+					}
+				}
+
+				labelMap[label][status]++;
+			});
+		}
+	};
+
+	window.buildLabel = () => {
+		const df = document.createDocumentFragment();
+
+		for (let label in labelMap) {
+			df.appendChild(createStatusItem(label, labelMap[label]));
+		}
+
+		return df;
+	};
+})();
+
+function initialize() {
+	const
+		SHUTDOWN = 0,
+		CRITICAL = 1,
+		NORMAL = 2;
+	var
+		sMap = {},
+		cMap = {},
+		sCount = 0,
+		cCount = 0,
+		nCount = 0,
+		base, pos, parent, status;
+		
+	for (let id in window.node) {
+		base = window.node[id];
+		pos = window.position[id];
+
+		// 동기화 안된 node의 pos 정보가 없음
+		if (!pos) {
+			window.position[id] = pos = {
+				x: 0,
+				y: 0
+			};
+		}
+		
+		if (pos.parent && !(pos.parent in window.node)) {
+			pos.parent = undefined;
+		}
+
+		if (pos.parent === window.upper) {
+			if ("protocol" in base) {
+				if (base.protocol === "snmp") {
+					window.topList.push(id);
+				}
+
+				if ("status" in base && !base.status) {
+					status = "shutdown";
+					
+					sCount++;
+
+					parseLabel(base.label, "shutdown");
+				}
+				else if ("critical" in base && !base.critical) {
+					status = "critical";
+					
+					cCount++;
+					
+					parseLabel(base.label, "critical");
+				}
+				else {
+					status = "normal";
+
+					nCount++;
+
+					parseLabel(base.label, "normal");
+				}
+			}
+
+			window.map.addNode(id, base, pos, status);
+		}
+		else if (parent = findParentFromStage(pos.parent)) {
+			// 하위
+			if ("protocol" in base) {
+				if (base.protocol === "snmp") {
+					window.topList.push(id);
+				}
+
+				if ("status" in base && !base.status) {
+					sMap[parent] = null;
+
+					sCount++;
+					
+					parseLabel(base.label, "shutdown");
+				}
+				else if ("critical" in base && !base.critical) {
+					cMap[parent] = null;
+
+					cCount++;
+					
+					parseLabel(base.label, "critical");
+				}
+				else {
+					nCount++;
+					
+					parseLabel(base.label, "normal");
+				}
+			}
+		}
+	}
+	
+	document.getElementById("alert").textContent = sCount;
+	document.getElementById("critical").textContent = cCount;
+	document.getElementById("normal").textContent = nCount;
+	
+	document.getElementById("summary_list").appendChild(buildLabel());
+
+	for (let id in cMap) {
+		window.map.setNode(id, "critical");
+	}
+
+	for (let id in sMap) {
+		window.map.setNode(id, "shutdown");
+	}
+	
+	for (let id in window.line) {
+		window.map.drawLine(id, window.line[id]);
+	}
+
+	window.map.start();
+
+	document.querySelector("iframe.top").src ="/top.html";
+
+	document.body.classList.remove("loading");
+}
+
+(map => {
+	map.onload = function () {
+		window.map = this.contentWindow;
+
+		top.postRequest({
+			command: "pull",
+			database: ["node", "line", "position"]
+		}, function () {
+			switch (this.status) {
+			case 200:
+				const database = JSON.parse(this.responseText);
+				
+				window.node = database.node;
+				window.line = database.line;
+				window.position = database.position;
+
+				(id => {
+					if (id) {
+						delete top.store.focus;
+					
+						if (id in window.position) {
+							const pos = window.position[id];
+
+							if (pos.parent && !(pos.parent in window.node)) {
+								pos.parent = undefined;
+							}
+
+							window.upper = top.store.parent = pos.parent;
+							
+							window.map.lookAt(pos);
+						}
+						else if (id in window.line) {
+							const
+								ar = id.split("."),
+								id1 = "node."+ ar[1],
+								id2 = "node."+ ar[2];
+
+							if (id1 in window.position && id2 in window.position) {
+								const
+									pos1 = window.position[id1],
+									pos2 = window.position[id2];
+								
+								if (pos1.parent === pos2.parent) {
+									window.upper = top.store.parent = pos1.parent;
+
+									window.map.lookAt({
+										x: (pos1.x + pos2.x) / -2,
+										y: (pos1.y + pos2.y) /-2
+									});
+								}
+							}
+						}
+					}
+				})(top.store.focus);
+
+				initialize();
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+		});
+	};
+
+	map.src = top.store.map3d? "map3d.html": "map2d.html";
+	
+}) (document.getElementById("map"));
+
+		</script>
+	
+	</body>
+	
+</html>

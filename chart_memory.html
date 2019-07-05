@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>ITAhM</title>
+		
+		<style>
+		
+@import "css/itahm.css";
+
+body {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	margin: 0; padding: 0;
+	display: flex;
+	flex-direction: column;
+	color: #fff;
+}
+
+body >div {
+	flex: 1;
+}
+
+iframe {
+	width: 100%; height: 100%;
+	border: none;
+}
+
+h2 {
+	text-align: center;
+	margin: 5px;
+}
+
+#legend {
+	text-align: right;
+}
+
+@media print {
+	body {
+		color: #000;
+	}
+}
+
+		</style>
+		<script>
+		
+/**
+ * public
+ */
+function initialize(args) {
+	var indexData = args.snmp.hrStorageEntry[args.index];
+	
+	window.request.id = args.id;
+	window.request.index = args.index;
+	window.request.start = args.start;
+	window.request.end = args.end;
+
+	window.max = indexData.hrStorageSize * indexData.hrStorageAllocationUnits;
+	
+	top.postRequest(window.request, function () {
+		switch (this.status) {
+		case 200:		
+			chartWindow.initialize(
+				new ITAhM.ChartSummaryData(JSON.parse(this.responseText)),
+				window.max,
+				"#b8860b",
+				onValueToString);
+
+			draw(args.position, args.limit);
+
+			break;
+		default:
+			alert(top.getMessage(this.status));
+
+			console.log(this.responseText && JSON.parse(this.responseText).error);
+		}
+	});
+	
+	document.getElementById("legend").textContent = "Memory capacity : "+ ITAhM.util.toBytesString(max);
+}
+
+function onValueToString(value) {
+	return ITAhM.util.toBytesString(value).replace("ytes", "");
+}
+
+/**
+ * private
+ */
+function buildSummaryFile() {
+	var summaryData = window.chartWindow.summaryData,
+		chartSummary = window.chartWindow.chartSummary,
+		blocks, row, block, mills, value, k = 0;
+	
+	row = ["index,date,max,avg,min"];
+	
+	if (chartSummary) {
+		blocks = chartSummary.keys;
+		
+		for (var i=0, _i=blocks.length; i<_i; i++) {
+			block = blocks[i];
+			
+			for (var j=0, _j=block.length; j<_j; j++) {
+				mills = block[j];
+				value = summaryData.get(mills);
+				
+				row[row.length] = [k++, ITAhM.util.toDateTimeString(new Date(mills)), value.max, value.avg, value.min].join(",");
+			}
+		}
+	}
+	
+	return row;
+}
+
+/**
+ * private
+ */
+function buildDetailFile() {
+	var detailData = window.chartWindow.detailData,
+		detailKeys = window.chartWindow.detailKeys,	
+		row = ["index,date,physical memory(bytes)"];
+		
+	for (var i=0, _i=detailKeys.length, j=0, mills; i<_i; i++, j++) {
+		mills = detailKeys[i];
+		
+		row[row.length] = [j, ITAhM.util.toDateTimeString(new Date(mills)), detailData.get(mills)].join(",");
+	}
+	
+	return row;
+}
+
+/**
+ * public
+ */
+function draw(position, limit) {
+	var date = new Date(position);
+	
+	if (window.chartWindow.draw(position, limit) && date.setDate(date.getDate() +1) === limit) {
+		window.request.summary = false;
+		window.request.start = position;
+		window.request.end = limit;
+		
+		top.postRequest(window.request, function () {
+			switch (this.status) {
+			case 200:
+				window.chartWindow.detail(new ITAhM.ChartData(JSON.parse(this.responseText)));		
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+		});
+	}
+}
+
+/**
+ * public
+ */
+function getFile() {
+	var rowArray;
+	
+	if (window.chartWindow.detailData) {
+		rowArray = buildDetailFile();
+	}
+	else {
+		rowArray = buildSummaryFile();
+	}
+	
+	ITAhM.util.download(new Blob([rowArray.join("\n")] ,{
+		type: "text/csv;charset=utf-8;"
+	}), "chart_memory.csv");
+}
+
+/**
+ * public
+ */
+(function(print) {
+	window.print = function() {
+		window.chartWindow.beforePrint();
+		
+		print();
+		
+		window.chartWindow.afterPrint();
+	};
+})(window.print);
+
+		</script>
+	</head>
+	
+	<body>
+	
+		<header>
+			<h2><i>"</i> Physical Memory <i>"</i></h2>
+			<div id="legend">max</div>
+		</header>
+		
+		<div>
+			<iframe id="chart" src="chart_base.html"></iframe>
+		</div>
+		
+		<script src="js/ITAhM.js"></script>	
+		<script src="js/object.js"></script>
+		<script>
+
+var chart = document.getElementById("chart"),
+	chartWindow = chart.contentWindow,
+	request = {
+		command: "query",
+		resource: "hrStorageUsed",
+		summary: true
+	};
+
+		</script>
+	
+	</body>
+	
+</html>

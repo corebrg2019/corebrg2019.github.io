@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>dialog</title>
+		
+		<style>
+@import "css/style.css";
+@import "css/dialog.css";
+
+body {
+	margin: 0; padding: 0;
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: rgba(0, 0, 0, .8);
+}
+
+form {
+	width: 360px;
+	padding: 20px;
+	background-color: #fff;
+	position: relative;
+}
+
+h2 {
+	margin: 0; padding: 10px;
+	background-color: #0084ff;
+	color: #fff;
+}
+
+div.table {
+	margin: 1em 0px;
+}
+
+div.table ul {
+	display: flex;
+	list-style: none;
+	padding: 1px;
+	margin: 0;
+}
+
+div.table li:first-child {
+	flex: none;
+	width: 100px;
+	padding: .5em;
+	text-align: right;
+}
+
+div.table li:nth-child(2) {
+	flex: 1;
+	background-size: 2em;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+div.table li:nth-child(3) {
+	flex: 4;
+}
+
+div.table input[type="text"],
+div.table input[type="number"] {
+	width: 100%;
+	box-sizing: border-box;
+	padding: .5em;
+}
+
+footer {
+	display: flex;
+	margin-top: 1em;
+}
+
+footer> input {
+	flex: 1;
+	border-radius: 1.2em;
+	background-color: #0084ff;
+	color: #fff;
+	border: .2em solid transparent;
+	padding: .5em;
+}
+
+footer> input:hover {
+	background-color: #fff;
+	color: #0084ff;
+	border-color: #0084ff;
+}
+
+input[type="checkbox"] {
+	vertical-align: middle;
+}
+
+#close {
+	font-size: 20px;
+	position: absolute; top: 5px; right: 5px;
+	border: 3px solid transparent;
+}
+
+#close:hover {
+	border-color: #c68e17;
+}
+
+#close::before, #close::after {
+	background-color: #c68e17;
+}
+
+.bg_loading {
+	position: absolute;
+}
+
+body:not(.edit) input[type=reset] {
+	display: none;
+}
+
+		</style>
+		
+	</head>
+	
+	<body>
+	
+		<form class="loading" autocomplete="off">
+				<i class="btn_close round" id="close"></i>
+			<h2>icon</h2>
+			<div class="table">
+				<ul>
+					<li>타입
+					<li><input type="text" name="type" placeholder="아이콘 타입">
+				</ul>
+				<ul>
+					<li>그룹
+					<li><input type="text" name="group" placeholder="아이콘 그룹">
+				</ul>
+				<ul>
+					<li>활성 이미지
+					<li></li>
+					<li><input type="text" name="url" placeholder="Image URL">
+				</ul>
+				<ul>
+					<li>비활성 이미지
+					<li></li>
+					<li><input type="text" name="disabled" placeholder="Image URL">
+				</ul>
+				<ul>
+					<li>3D Color
+					<li><input type="text" name="color" placeholder="Color Hex Code">
+				</ul>
+				<ul>
+					<li>3D Unit Size
+					<li><input type="number" name="unit" min="1">
+				</ul>
+				<ul>
+					<li>3D Texture
+					<li></li>
+					<li><input type="text" name="texture" placeholder="Image URL">
+				</ul>
+				<ul>
+					<li>3D Top Texture
+					<li></li>
+					<li><input type="text" name="top" placeholder="Image URL">
+				</ul>
+			</div>
+			<footer>
+				<input type="reset" value="초기화" disabled>
+				<input type="submit" value="확인" disabled>
+			</footer>
+			<div class="bg_loading"></div>
+		</form>
+		
+		<script>
+
+function close() {
+	top.closeDialog(true);
+}
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+		close();
+		
+		break;
+	}
+});
+
+document.getElementById("close").onclick = close;
+
+if (top.account.level === 0) {
+	document.querySelector("input[type=reset]").disabled = false;
+	document.querySelector("input[type=submit]").disabled = false;
+}
+
+(function (form) {
+	var opener;
+
+	function postRequest(icon) {
+		document.body.classList.add("loading");
+		
+		top.postRequest({
+			command: "put",
+			database: "setting",
+			key: "icon",
+			value: icon
+		}, function () {
+			switch (this.status) {
+			case 200:
+				top.setting.icon = icon;
+
+				reload();
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+
+			document.body.classList.remove("loading");
+		});
+	}
+
+	form.onreset = function (e) {
+		e.preventDefault();
+	
+		if (!confirm("아이콘 설정을 초기화 하겠습니까?")) {
+			return;
+		}
+		
+		const icon = JSON.parse(JSON.stringify(top.setting.icon));
+
+		delete(icon[form.elements["type"].value]);
+
+		postRequest(icon);
+	};
+	
+	form.onsubmit = function (e) {
+		e.preventDefault();
+		
+		const icon = "icon" in top.setting? JSON.parse(JSON.stringify(top.setting.icon)): {};
+	
+		icon[form.elements["type"].value] = {
+			group: form.elements["group"].value,
+			src: form.elements["url"].value,
+			disabled: form.elements["disabled"].value,
+			texture: form.elements["texture"].value,
+			color: form.elements["color"].value,
+			unit: parseInt(form.elements["unit"].value),
+			top: form.elements["top"].value
+		};
+
+		postRequest(icon);
+	};
+
+	function drawImage(input, url) {
+		input.parentNode.previousElementSibling.style.backgroundImage = "url("+url+")";
+	}
+
+	(function (delay) {
+		var active;
+
+		form.elements["url"].oninput =
+		form.elements["disabled"].oninput =
+		form.elements["texture"].oninput = 
+		form.elements["top"].oninput = function (e) {
+			const
+				input = this,
+				start = performance.now();
+			let id;
+			
+			active = id = requestAnimationFrame(function f(t) {
+				if (active != id) {
+					return;
+				}
+
+				if (t - start > delay) {
+					drawImage(input, input.value);
+				}
+				else {
+					requestAnimationFrame(f);
+				}
+			});
+		};
+	})(500);
+
+	window.initialize = function (type, icon) {
+		const opener = this;
+
+		window.reload = function () {
+			opener.location.reload();
+			
+			close();
+		};
+
+		if (type) {
+			if ("icon" in top.setting && type in top.setting.icon) {
+				document.body.classList.add("edit");
+			}
+			
+			form.elements["type"].value = type;
+			form.elements["group"].value = icon.group;
+			form.elements["url"].value = icon.src;
+			form.elements["disabled"].value = icon.disabled;
+			form.elements["unit"].value = icon.unit;
+			form.elements["color"].value = icon.color;
+
+			drawImage(form.elements["url"], icon.src);
+			drawImage(form.elements["disabled"], icon.disabled);
+
+			if (icon.texture) {
+				drawImage(form.elements["texture"], icon.texture);
+
+				form.elements["texture"].value = icon.texture;
+			}
+
+			if (icon.top) {
+				drawImage(form.elements["top"], icon.top);
+
+				form.elements["top"].value = icon.top;
+			}
+		}
+		
+		form.elements["type"].select();
+	};
+
+}) (document.querySelector("form"));
+
+		</script>
+	
+	</body>
+	
+</html>

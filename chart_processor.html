@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		
+		<title>ITAhM</title>
+		
+		<style>
+
+@import "css/itahm.css";
+
+body {
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	margin: 0; padding: 0;
+	display: flex;
+	flex-direction: column;
+	color: #fff;
+}
+
+@media print {
+	body {
+		color: #000;
+	}
+}
+
+#chart {
+	flex: 1;
+}
+
+#chart.sum >iframe:not(:first-child),
+#chart:not(.sum) >iframe:first-child {
+	display: none;
+}
+
+#chart.col {
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+#chart.row {
+	display: flex;
+	flex-direction: row;
+	overflow-y: hidden;
+	overflow-x: auto;
+}
+
+#chart >iframe {
+	border: none;
+	flex: 1;
+}
+
+#chart.col >iframe {
+	width: 100%;
+	min-height: 160px;
+}
+
+#chart.row >iframe {
+	height: 100%;
+	min-width: 320px;
+}
+
+#chart >iframe {
+	width: 100%; height: 100%;
+}
+
+nav {
+	text-align: right;
+}
+
+h2 {
+	text-align: center;
+	margin: 5px;
+}
+
+#legend {
+	text-align: right;
+}
+
+body.ro #view {
+	display: none;
+}
+
+@media print {
+	nav {
+		display: none;
+	}
+}
+
+		</style>
+		<script>
+
+function loadChart(indexArray, callback) {
+	if (indexArray.length > 0) {
+		const
+			index = indexArray.pop(),
+			chart = document.createElement("iframe");
+
+		window.chartMap[index] = chart;
+
+		window.chartLayer.appendChild(chart);
+
+		chart.onload = loadChart.bind(chart, indexArray, callback);
+
+		chart.src = "chart_base.html";
+	}
+	else {
+		callback();
+	}
+}
+
+/**
+ * public
+ */
+function initialize(args) {
+	window.request.id = args.id;
+	window.request.index = args.index;
+	window.request.start = args.start;
+	window.request.end = args.end;
+
+	loadChart(Object.keys(args.snmp.hrProcessorEntry), function () {
+		top.postRequest(window.request, function () {
+			switch (this.status) {
+			case 200:
+				const
+					data = JSON.parse(this.responseText),
+					summary = {};
+				let chartData, summaryData;
+
+				for (let index in data) {
+					chartData = new ITAhM.ChartSummaryData(data[index]);
+
+					window.chartMap[index].contentWindow.initialize(
+						chartData,
+						window.max,
+						window.colorList[window.colorIndex++ % window.colorLength],
+						onValueToString);
+					
+					summaryData = chartData.data;
+					
+					for (let mills in summaryData) {
+						if (!(mills in summary)) {
+							summary[mills] = {
+								avg: [],
+								min: [],
+								max: []
+							};
+						}
+						summary[mills].avg.push(summaryData[mills].avg);
+						summary[mills].min.push(summaryData[mills].min);
+						summary[mills].max.push(summaryData[mills].max);
+					}
+				}
+		
+				for (var mills in summary) {
+					summary[mills].avg =
+						summary[mills].avg.reduce(function (a, b) {
+							return a + b;
+						}) / summary[mills].avg.length;
+					summary[mills].min = Math.min.apply(undefined, summary[mills].min);
+					summary[mills].max = Math.max.apply(undefined, summary[mills].max);
+				}
+
+				window.chartMap["0"].contentWindow.initialize(
+					new ITAhM.ChartSummaryData(summary),
+					window.max,
+					window.colorList[window.colorIndex++ % window.colorLength],
+					onValueToString);
+				
+				draw(args.position, args.limit);
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+		});
+	});
+}
+
+function onValueToString(value) {
+	return value.toFixed(2) +"%";
+}
+
+/**
+ * public
+ */
+ function draw(position, limit) {
+	const
+		date = new Date(position);
+	
+	if (date.setDate(date.getDate() +1) === limit) {
+		window.request.summary = false;
+		window.request.start = position;
+		window.request.end = limit;
+
+		top.postRequest(window.request, function () {
+			switch (this.status) {
+			case 200:
+				const data = JSON.parse(this.responseText);
+				let chart;
+
+				for (let index in window.chartMap) {
+					chart = window.chartMap[index].contentWindow;
+					
+					if (chart.draw(position, limit) && index !== "0") {
+						chart.detail(new ITAhM.ChartData(data[index]));
+					}
+				}
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+		});
+	}
+	else {
+		for (let index in window.chartMap) {
+			window.chartMap[index].contentWindow.draw(position, limit)
+		}
+	}
+}
+
+/**
+ * public
+ */
+function getFile() {
+	var chartWindow;
+	
+	for (var index in window.chartMap) {
+		chartWindow = window.chartMap[index].contentWindow;
+		
+		ITAhM.util.download(new Blob([(chartWindow.detailData? buildDetailFile: buildSummaryFile)(chartWindow).join("\n")] ,{
+			type: "text/csv;charset=utf-8;"
+		}), "chart_processor_"+ index +".csv");
+	}
+}
+
+function buildDetailFile(chartWindow) {
+	var detailData = chartWindow.detailData,
+		detailKeys = chartWindow.detailKeys,
+		row = ["index,date,processor load(%)"];
+	
+	for (var i=0, _i=detailKeys.length, j=0, mills; i<_i; i++, j++) {
+		mills = detailKeys[i];
+		
+		row[row.length] = [j, ITAhM.util.toDateTimeString(new Date(mills)), detailData.get(mills)].join(",");
+	}
+	
+	return row;
+}
+
+function buildSummaryFile(chartWindow) {
+	var summaryData = chartWindow.summaryData,
+		chartSummary = chartWindow.chartSummary,
+		row = ["index,date,max,avg,min"],
+		blocks, row, block, date, mills, value, k = 0;
+	
+	if (chartSummary) {
+		blocks = chartSummary.keys;
+		
+		for (var i=0, _i=blocks.length; i<_i; i++) {
+			block = blocks[i];
+			
+			for (var j=0, _j=block.length; j<_j; j++) {
+				mills = block[j];
+				value = summaryData.get(mills);
+				
+				date = new Date(mills);
+				
+				row[row.length] = [k++, ITAhM.util.toDateTimeString(date), value.max, value.avg, value.min].join(",");
+			}
+		}
+	}
+	
+	return row;
+}
+
+/**
+ * public
+ */
+(function(print) {
+	window.print = function() {
+		for (var index in window.chartMap) {
+			window.chartMap[index].contentWindow.beforePrint();
+		}
+		
+		print();
+		
+		for (var index in window.chartMap) {
+			window.chartMap[index].contentWindow.afterPrint();
+		}
+	};
+})(window.print);
+
+		</script>
+	</head>
+	
+	<body>
+		<header>
+			<h2><i>"</i> Processor Load <i>"</i></h2>
+			<div id="legend">Max load: 100%</div>
+		</header>
+		<nav>
+			<select id="view">
+				<option value="sum" selected>모아 보기
+				<option value="row">가로 보기
+				<option value="col">세로 보기
+			</select>
+		</nav>
+		<div id="chart" class="sum">
+			<iframe src="/chart_base.html"></iframe>
+		</div>
+		
+		<script src="js/ITAhM.js"></script>	
+		<script src="js/object.js"></script>
+		<script>
+
+var chartLayer = document.getElementById("chart"),
+	chartMap = {
+		"0": chartLayer.querySelector("iframe")
+	},
+	colorList = [
+		"#6b050d",
+		"#f0a30a",
+		"#6a00ff",
+		"#008a00",
+		"#a20025",
+		"#333",
+		"#1ba1e2",
+		"#093346"],
+	request = {
+		command: "query",
+		summary: true,
+		resource: "hrProcessorLoad",
+	},
+	colorLength = colorList.length,
+	colorIndex = 0,
+	max = 100;
+
+if (top.origin !== "status") {
+	document.body.classList.add("ro");
+}
+
+document.getElementById("view").onchange = function () {
+	chartLayer.className = this.value;
+}
+
+		</script>
+	
+	</body>
+	
+</html>

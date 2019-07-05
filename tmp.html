@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+body {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+}
+
+div {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+}
+        </style>            
+    </head>
+    <body>
+        <script>
+for (let i=0, div; i<10; i++) {
+    div = document.createElement("div");
+
+    div.style.top = Math.random() * 500 +"px";
+    div.style.left = Math.random() * 500 +"px";
+
+    div.style.backgroundColor = "rgba("+ Math.random() *255 +","+ Math.random() *255 +","+ Math.random() *255 +")";
+
+    document.body.appendChild(div);
+}
+        </script>
+    </body>
+</html>
