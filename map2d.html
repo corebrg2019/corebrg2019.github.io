@@ -172,9 +172,9 @@ function getTraffic(e) {
 		}
 		
 		top.postRequest({
-			command: "order",
-			order: "traffic",
-			line: line
+			command: "get",
+			target: "traffic",
+			traffic: line
 		}, function () {
 			switch (this.status) {
 			case 200:
@@ -343,7 +343,8 @@ function onMouseOver(e) {
 	svg = this;
 
 	top.postRequest({
-		command: "node",
+        command: "get",
+        target: "node",
 		id: this.id,
 		snmp: true
 	}, function () {

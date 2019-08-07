@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Dialog @ Line</title>
+		
+		<style>
+@import "/css/style.css";
+@import "/css/dialog.css";
+
+body {
+	margin: 0; padding: 0;
+	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: rgba(0, 0, 0, .8);
+}
+
+h2 {
+	margin: 0; padding: 10px;
+	background-color: #0084ff;
+	color: #fff;
+}
+
+h3 {
+	margin-top: 0;
+}
+
+.dialog {
+	width: 380px;
+	padding: 20px;
+	background-color: #fff;
+}
+
+input[type="checkbox"] {
+	vertical-align: middle;
+}
+
+footer {
+	display: flex;
+	margin-top: 1em;
+}
+
+footer input {
+	flex: 1;
+	border-radius: 1.2em;
+	background-color: #0084ff;
+	color: #fff;
+	border: .2em solid transparent;
+	padding: .5em;
+}
+
+footer input:hover {
+	background-color: #fff;
+	color: #0084ff;
+	border-color: #0084ff;
+}
+
+#close {
+	font-size: 20px;
+	position: absolute; top: 5px; right: 5px;
+	border: 3px solid transparent;
+}
+
+#close:hover {
+	border-color: #c68e17;
+}
+
+#close::before, #close::after {
+	background-color: #c68e17;
+}
+
+table {
+    border-collapse:collapse;
+    border: 1px solid #aaa;
+    width: 100%;
+    margin-top: 1em;
+}
+
+th {
+    background-color: #686160;
+    color: #fff;
+}
+
+td, th {
+    padding: 3px;
+}
+
+td >input[type=text] {
+    padding: 0.5em;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input[type="number"] {
+	text-align: right;
+}
+
+input[name=create] {
+    width: 100%;
+    padding: 4em;
+    box-sizing: border-box;
+    text-align: center;
+    margin-top: 1em;
+}
+
+main {
+    margin-top: 1em;
+}
+
+.link {
+    border: 1px solid #aaa;
+}
+
+.head {
+    font-weight: bolder;
+    background-color: #686160;
+    color: #fff;
+    display: flex;
+}
+
+.head span {
+    display: inline-block;
+    padding: 0.6em;
+}
+
+.head span:first-child {
+    flex: 1;
+}
+
+.summary {
+    display: flex;
+    padding: 0.5em;
+    background-color: #ebebeb;
+    border-bottom: 1px solid #8a7f80;
+    cursor: pointer;
+}
+
+.summary.selected {
+    cursor: default;
+}
+
+.summary:hover {
+    background-color: #c7c6c4;
+}
+
+.summary.selected {
+    background-color: inherit;
+    border-bottom: none;
+}
+
+.summary span {
+    flex: 1;
+    text-align: center;
+}
+
+.summary span:empty::after {
+    content: "선택하지 않음";
+}
+
+div.details {
+    margin: 0.5em; padding: 0.5em;
+    border: 1px solid #aaa;
+}
+
+div.details ul {
+    padding: 0; margin: 0;
+    list-style: none;
+}
+
+div.details li {
+    display: flex;
+}
+
+div.details li >*:first-child {
+    flex: 2;
+}
+
+div.details li >*:last-child {
+    flex: 3;
+}
+
+div.details li >* {
+    padding: 0.5em;
+}
+
+div.details select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.container {
+    position: relative;
+}
+
+.bg_loading {
+    position: absolute;
+}
+
+nav {
+    margin-top: 0.5em;
+    text-align: right;
+}
+
+body:not(.details) div.details,
+body:not(.initialized) main,
+body.initialized input[name=create] {
+	display: none;
+}
+
+		</style>
+		
+		<script></script>
+	</head>
+	
+	<body class="loading">
+	
+		<form class="dialog" autocomplete="off">
+			<i class="btn_close round" id="close"></i>
+            <h2>경로</h2>
+            <div class="container">
+                <input name="create" type="button" value="경로 생성">
+                <main>
+                    <div class="head">
+                        <span>링크</span>
+                        <span>
+                            <input name="add_link" type="button" value="추가" title="링크 추가">
+                        </span>
+                    </div>
+                    <div class="link">
+                        <div id="list">
+                            <div class="details">
+                                <ul>
+                                    <li>
+                                        <span class="node_from">
+                                            node1
+                                        </span>
+                                        <select id="index_from"></select>
+                                    </li>
+                                    <li>
+                                        <span class="node_to">
+                                            node2
+                                        </span>
+                                        <select id="index_to"></select>
+                                    </li>
+                                </ul>
+                                <nav>
+                                    <input type="button" name="remove_link" value="삭제">
+                                    <input type="button" name="set_link" value="수정">
+                                    <input type="button" name="close_link" value="닫기">
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <table>
+                        <colgroup>
+                            <col width="100">
+                            <col>
+                            <col>
+                        </colgroup>
+                        <tr>
+                            <th>선 종류</th>
+                            <td><input type="checkbox" name="use_type"></td>
+                            <td><input type="text" name="type" value="기본" required disabled></td>
+                        </tr>
+                        <tr>
+                            <th>선 색상</th>
+                            <td><input type="checkbox" name="use_color"></td>
+                            <td><input type="text" name="color" value="기본" required disabled></td>
+                        </tr>
+                        <tr>
+                            <th>선 두께</th>
+                            <td><input type="checkbox" name="use_size"></td>
+                            <td><input type="text" name="size" value="기본" required disabled></td>
+                        </tr>
+                    </table>
+                    
+                    <footer>
+                        <input type="reset" value="삭제" disabled>
+                        <input type="submit" value="수정" disabled>
+                    </footer>
+                </main>
+
+                <div class="bg_loading"></div>
+			</div>
+		</form>
+        
+		<script>
+
+function close() {
+	top.closeDialog(true);
+}
+
+document.addEventListener("keydown", function (e) {
+	switch (e.keyCode) {
+	case 27:
+		close();
+		
+		break;
+	}
+});
+
+document.getElementById("close").onclick = close;
+
+(function (form) {
+    const customLink = {};
+	var opener, nodeFrom, nodeTo, linkData;
+
+	if (top.account.level === 0) {
+		document.querySelector("input[type=reset]").disabled = false;
+		document.querySelector("input[type=submit]").disabled = false;
+
+		//form.onreset = onRemoveLine;
+	}
+
+    form.elements["use_color"].onclick = e => {
+        const colorElement = form.elements["color"];
+
+        if (e.currentTarget.checked) {
+            colorElement.value = "";
+            colorElement.disabled = false;
+            colorElement.focus();
+        }
+        else {
+            colorElement.value = "기본";
+            colorElement.disabled = true;
+        }
+    };
+
+    form.elements["use_size"].onclick = e => {
+        const sizeElement = form.elements["size"];
+
+        if (e.currentTarget.checked) {
+            sizeElement.value = "";
+            sizeElement.disabled = false;
+            sizeElement.focus();
+        }
+        else {
+            sizeElement.value = "기본";
+            sizeElement.disabled = true;
+        }
+    };
+
+    form.elements["create"].onclick = e => {
+        document.body.classList.add("loading");
+
+        top.postRequest({
+            command: "add",
+            target: "path",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo
+        }, function () {
+            switch(this.status) {
+			case 200:
+				document.body.classList.add("initialized");
+
+                document.body.classList.remove("loading");
+
+				break;
+            case 409:
+                alert("오류!\n\n경로 생성 실패.");
+
+                break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+        });
+
+        document.body.classList.remove("loading");
+    }
+
+    form.elements["add_link"].onclick = e => {
+        document.body.classList.add("loading");
+
+        top.postRequest({
+            command: "add",
+            target: "link",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo
+        }, function () {
+            switch(this.status) {
+            case 409:                
+                alert("오류!\n\n링크 추가 실패.");
+            case 200:
+                window.location.reload();
+
+                break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+        });
+    }
+
+    form.elements["set_link"].onclick = e => {
+        const link = {
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo,
+            id: Number(document.querySelector(".summary.selected").dataset.id)
+        };
+
+        if (document.getElementById("index_from").value) {
+            link.indexFrom = document.getElementById("index_from").value;
+        }
+
+        if (document.getElementById("index_to").value) {
+            link.indexTo = document.getElementById("index_to").value;
+        }
+
+        if (Object.keys(customLink).length > 0) {
+            const extra = {};
+        
+            for (let key in customLink) {
+                extra[key] = customLink[key].value;
+            }
+
+            link.extra = extra;
+        }
+        
+		document.body.classList.add("loading");
+
+        top.postRequest({
+            command: "set",
+            target: "link",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo,
+            id: link.id,
+            link: link
+        }, function () {
+            switch(this.status) {
+            case 409:                
+                alert("오류!\n\n링크 수정 실패.");
+            case 200:
+                window.location.reload();
+
+                break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+        });
+    };
+    
+	form.elements["remove_link"].onclick = e => {
+		document.body.classList.add("loading");
+
+        top.postRequest({
+            command: "remove",
+            target: "link",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo,
+            id: Number(document.querySelector(".summary.selected").dataset.id)
+        }, function () {
+            switch(this.status) {
+            case 409:                
+                alert("오류!\n\n링크 삭제 실패.");
+            case 200:
+                window.location.reload();
+
+                break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+        });
+	};
+
+    form.elements["close_link"].onclick = e => {
+        const details = document.body.querySelector(".details");
+
+        details.previousElementSibling.classList.remove("selected");
+
+		document.body.classList.remove("details");
+    };
+    
+	form.onsubmit = function (e) {
+		e.preventDefault();
+	};
+
+	// public
+	window.initialize = function(from, to, path) {
+		opener = this;
+        nodeFrom = from;
+        nodeTo = to;
+
+        top.postRequest({
+            command: "get",
+            target: "setting",
+            key: "customLink",
+        }, function () {
+            switch(this.status) {
+            case 200:
+                initCustom(JSON.parse(this.responseText).customLink.split(','));
+
+            case 204:
+                if (path) {
+                    initLink(path);
+                }
+                else {
+                    document.body.classList.remove("loading");
+                }
+                
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    };
+    
+    function initLink(path) {
+        document.body.classList.add("initialized");
+
+        top.postRequest({
+            command: "get",
+            target: "link",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo
+        }, function () {
+            switch(this.status) {
+            case 200:
+                linkData = JSON.parse(this.responseText);
+
+                for (let id in linkData) {
+                    addLink(linkData
+                    [id]);
+                }
+            case 204:
+                document.body.classList.remove("loading");
+
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    }
+
+    function initCustom(customs) {
+        const
+            df = document.createDocumentFragment(),
+            details = document.body.querySelector(".details");
+        let
+            li,
+            span,
+            input;
+        
+        for (var i=0, _i=customs.length; i<_i; i++) {
+            li = df.appendChild(document.createElement("li"));
+            li.appendChild(document.createElement("span")).textContent = customs[i];
+            
+            input = document.createElement("input");
+            input.type = "text";
+            
+            customLink[customs[i]] = input;
+            
+            li.appendChild(input);
+        }
+        
+        details.insertBefore(df, details.querySelector("nav"));
+    }
+
+    function openLinkDialog() {
+        const
+            details = document.body.querySelector(".details"),
+            selected = details.previousElementSibling,
+            link = linkData && linkData[this.dataset.id];
+
+        if (selected) {
+            selected.classList.remove("selected");
+        }
+
+        this.classList.add("selected");
+
+        this.parentNode.insertBefore(details, this.nextSibling);
+
+        if (link) {
+            if (link.extra) {
+                for (let key in customLink) {
+                    customLink[key].value = link.extra[key] || "";
+                }
+            }
+            else {
+                [].forEach.call(details.querySelectorAll("input[type=text"), input => {
+                    input.value = "";
+                });
+            }
+        }
+
+        document.body.classList.add("details");
+    }
+
+    function addLink(link) {
+        const summary = document.createElement("div");
+        
+        summary.appendChild(document.createElement("span"));
+        summary.appendChild(document.createElement("span"));
+
+        summary.classList.add("summary");
+
+        document.getElementById("list").appendChild(summary);
+
+        summary.onclick = openLinkDialog;
+
+        summary.dataset.id = link.id;
+    }
+    
+}) (document.querySelector("form"));
+
+		</script>
+	
+	</body>
+	
+</html>

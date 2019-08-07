@@ -778,8 +778,8 @@ document.getElementById("sort").onclick = function (e) {
 }) (document.querySelector("form"));
 
 top.postRequest({
-	command: "pull",
-	database: "node"
+	command: "get",
+	target: "node"
 }, function () {
 	switch (this.status) {
 	case 200:

@@ -162,10 +162,9 @@ body:not(.edit) input[type=reset] {
 		document.body.classList.add("loading");
 
 		top.postRequest({
-			command: "put",
-			database: "user",
-			key: user,
-			value: null
+			command: "remove",
+			target: "user",
+			name: user
 		}, function () {
 			switch (this.status) {
 			case 200:
@@ -187,26 +186,34 @@ body:not(.edit) input[type=reset] {
 	form.onsubmit = function (e) {
 		e.preventDefault();
 	
-		const
-			user = {
-				name: form.elements["name"].value
-			};
+        const
+            request = {
+                target: "user",
+			    name: form.elements["name"].value,
+                user: {
+                    name: form.elements["name"].value
+                }
+            };
 	
 		if (!form.elements["sms"].value && !form.elements["mail"].value) {
 			return alert("수신 정보가 하나 이상 필요합니다.");
 		}
 
-		user.sms = form.elements["sms"].value || undefined;
-		user.mail = form.elements["mail"].value || undefined;
+		request.user.sms = form.elements["sms"].value || undefined;
+		request.user.mail = form.elements["mail"].value || undefined;
+
+        if (document.body.classList.contains("eidt")) {
+            // 수정
+            request.command = "set";
+        }
+        else {
+            // 생성
+            request.command = "add";
+        }
 
 		document.body.classList.add("loading");
 
-		top.postRequest({
-			command: "put",
-			database: "user",
-			key: form.elements["name"].value,
-			value: user
-		}, function () {
+		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
 				opener && opener.reload();

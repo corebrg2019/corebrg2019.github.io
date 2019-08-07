@@ -105,7 +105,6 @@ body:not(.edit) input[type=reset] {
 }
 
 		</style>
-		
 	</head>
 	
 	<body class="loading">
@@ -178,78 +177,123 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-	let opener;
-
-	function postRequest(username, account) {
-		document.body.classList.add("loading");
-		
-		top.postRequest({
-			command: "put",
-			database: "account",
-			key: username,
-			value: account
-		}, function (data) {
-			switch (this.status) {
-			case 200:
-				opener && opener.reload();
-				
-				top.closeDialog();
-
-				break;
-			case 409:
-				alert("계정을 삭제할 수 없습니다.\nRoot 레벨 계정이 하나 이상 존재해야 합니다.");
-
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-
-			document.body.classList.remove("loading");
-		});
-	}
+    let
+        opener, password;
 
 	form.onreset = function(e) {
 		e.preventDefault();
 
-		if (confirm("계정을 삭제하겠습니까?")) {
-			postRequest(form.elements.username.value, null);
-		}
+		if (!confirm("계정을 삭제하겠습니까?")) {
+            return;
+        }
+
+        top.postRequest({
+            command: "remove",
+            target: "account",
+            username: form.elements["username"].value
+        }, function () {
+            switch (this.status) {
+            case 200:
+                opener && opener.reload();
+                        
+                top.closeDialog();
+
+                break;
+            case 409:
+                alert("계정을 삭제할 수 없습니다.\nRoot 레벨 계정이 하나 이상 존재해야 합니다.");
+
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+
+            document.body.classList.remove("loading");
+        });
 	};
 
 	form.onsubmit = function (e) {
 		e.preventDefault();
+        
+        const
+            request = {
+                target: "account",
+                username: form.elements["username"].value,
+                account: {
+                    level: parseInt(form.elements["level"].value)
+                }
+            };
 		
-		var password = form.elements.password,
-			password2 = form.elements.password2;
-			
-		if (password.value !== password2.value) {
-			alert("password does not match the confirmation");
-			
-			password2.select();
-			
-			return;
-		}
+        if (form.elements["username"].disabled) {
+            // 수정
+            form.elements["password"].required = false;
+            form.elements["password2"].required = false;
+
+            if (form.elements["password"].value !== form.elements["password2"].value) {
+                if (form.elements["password"].value) {
+                    alert("비밀번호가 확인 비밀번호와 일치하지 않습니다.");
+
+                    form.elements["password2"].select();
+                }
+                else {
+                    alert("비밀번호를 입력하세요.");
+
+                    form.elements["password"].select();
+                }
+                
+                return;
+            }
+            else if (form.elements["password"].value){
+                request.account.password = hex_md5(form.elements["password"].value);
+            }
+            else {
+                request.account.password = password;
+            }
+
+            request.command = "set";
+        }
+        else {
+            // 생성
+            if (form.elements["password"].value !== form.elements["password2"].value) {
+                alert("비밀번호가 확인 비밀번호와 일치하지 않습니다.");
+
+                form.elements["password2"].select();
+                
+                return;
+            }
+
+            request.command = "add";
+            
+            request.account.password = hex_md5(form.elements["password"].value);
+        }
 		
-		var username = form.elements.username.value;
-		
-		postRequest(username, {
-			username: username,
-			password: hex_md5(password.value),
-			level: parseInt(form.elements.level.value)
-		});
+		top.postRequest(request, function () {
+            switch (this.status) {
+            case 200:
+                opener && opener.reload();
+                        
+                top.closeDialog();
+
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
 	};
 
 	window.initialize = function (username, account) {
 		opener = this && this.location;
 		
-		if (username) {			
-			form.elements.username.value = username;
-			form.elements.username.disabled = true;
+		if (username) {	
+			form.elements["username"].value = username;
+			form.elements["username"].disabled = true;
+			form.elements["level"].value = account.level;
 			
-			form.elements.level.value = account.level;
-			
+            password = account.password;
+
 			document.body.classList.add("edit");
 		}
 		

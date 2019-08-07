@@ -561,7 +561,8 @@ var chart = document.getElementById("chart"),
 	realtimeData = new RealtimeData(PERIOD * 60000),
 	download = [],
 	request = {
-		command: "node",
+        command: "get",
+        target: "node",
 		snmp: true
 	};
 

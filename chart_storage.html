@@ -57,7 +57,7 @@ function initialize(args) {
 	
 	window.max = indexData.hrStorageSize * indexData.hrStorageAllocationUnits;
 	
-	top.postRequest(request, function () {
+	top.postRequest(window.request, function () {
 		switch (this.status) {
 		case 200:
 			window.chartWindow.initialize(

@@ -260,35 +260,40 @@ document.getElementById("close").onclick = close;
 		
 		const
 			ip = this.elements["ip"].value,
-			base = {
-				role: "node"
-			};
+            request = {
+                target: "node",
+                node: {
+                    role: "node",
+                    ip: ip,
+                    name: this.elements["name"].value,
+                    type: this.elements["type"].value,
+                    label: trimLabel(this.elements["label"].value)
+                }
+            };
 
 		if (ip && !isIPv4(ip)) {
 			return this.elements["ip"].select();
 		}
 		
-		base.ip = ip;
-		base.name = this.elements["name"].value;
-		base.type = this.elements["type"].value;
-		base.label = trimLabel(this.elements["label"].value);
-		
 		if (Object.keys(window.custom).length > 0) {
-			base.custom = {};
+			request.node.custom = {};
 
 			for (var name in window.custom) {
-				base.custom[name] = window.custom[name].value;
+				request.node.custom[name] = window.custom[name].value;
 			}
 		}
 
 		document.body.classList.add("loading");
 
-		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id || "",
-			value: base
-		}, function () {
+        if (window.id) {
+            request.command = "set";
+            request.id = window.id;
+        }
+        else {
+            request.command = "add";
+        }
+
+		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
 				reloadOpener();
@@ -320,10 +325,9 @@ document.getElementById("close").onclick = close;
 		document.body.classList.add("loading");
 		
 		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id,
-			value: null
+			command: "remove",
+			target: "node",
+			id: window.id
 		}, function () {
 			switch (this.status) {
 				case 200:
@@ -357,12 +361,20 @@ document.getElementById("close").onclick = close;
 		
 		document.body.classList.add("loading");
 
-		top.postRequest({
-			command: "order",
-			order: "monitor",
-			id: window.id,
-			protocol: this.value === "none"? undefined: this.value
-		}, function () {
+        const request = {
+            target: "monitor",
+            id: window.id
+        };
+
+        if (this.value === "none") {
+            request.command = "remove";
+        }
+        else {
+            request.command = "set";
+            request.protocol = this.value;
+        }
+
+		top.postRequest(request, function () {
 			switch (this.status) {
 				case 200:
 					reloadOpener();
@@ -423,7 +435,8 @@ document.getElementById("close").onclick = close;
 		
 		if (id) {
 			top.postRequest({
-				command: "node",
+				command: "get",
+                target: "node",
 				id: id
 			}, function () {
 				switch (this.status) {

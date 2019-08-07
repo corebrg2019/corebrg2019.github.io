@@ -208,10 +208,9 @@ document.getElementById("close").onclick = close;
 		document.body.classList.add("loading");
 		
 		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id,
-			value: null
+			command: "remove",
+			target: "node",
+			id: window.id
 		}, function () {
 			switch (this.status) {
 				case 200:
@@ -231,21 +230,26 @@ document.getElementById("close").onclick = close;
 	form.onsubmit = function (e) {
 		e.preventDefault();
 	
-		const base = {
-			role: "group"
+		const request = {
+            target: "node",
+            value: {
+			    role: "group",
+                name: form.elements["name"].value,
+                type: form.elements["type"].value
+            }
 		};
-		
-		base.name = form.elements["name"].value;
-		base.type = form.elements["type"].value;
 		
 		document.body.classList.add("loading");
 
-		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id || "",
-			value: base
-		}, function () {
+        if (window.id) {
+            request.command = "set";
+            request.id = window.id;
+        }
+        else {
+            request.command = "add";
+        }
+
+		top.postRequest(request, function () {
 			switch (this.status) {
 				case 200:
 					reloadOpener();
@@ -277,7 +281,8 @@ document.getElementById("close").onclick = close;
 
 		if (id) {
 			top.postRequest({
-				command: "node",
+				command: "get",
+                target: "node",
 				id: id
 			}, function () {
 				switch (this.status) {

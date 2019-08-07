@@ -410,8 +410,8 @@ window.form.elements["critical"].onclick = function () {
 	});
 
 	top.postRequest({
-		command: "order",
-		order: "critical",
+		command: "set",
+		target: "critical",
 		id: top.name,
 		critical: critical
 	}, function () {
@@ -452,8 +452,8 @@ window.form.elements["speed"].onclick = function () {
 	});
 
 	top.postRequest({
-		command: "order",
-		order: "speed",
+		command: "set",
+		target: "speed",
 		id: top.name,
 		speed: speed
 	}, function () {
@@ -486,8 +486,8 @@ window.form.elements["updown"].onclick = function () {
 	});
 
 	top.postRequest({
-		command: "order",
-		order: "updown",
+		command: "set",
+		target: "updown",
 		id: top.name,
 		updown: updown
 	}, function () {
@@ -506,7 +506,8 @@ window.form.elements["updown"].onclick = function () {
 
 if (top.name) {
 	top.postRequest({
-		command: "node",
+		command: "get",
+        target: "node",
 		id: top.name,
 		snmp: true
 	}, function () {

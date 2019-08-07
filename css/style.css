@@ -65,3 +65,22 @@ body:not(.loading) .bg_loading {
 	background: #4d525a url("/img/loading.gif") no-repeat center;
 	background-size: 32px 32px;
 }
+
+.btn.normal {
+    position: relative;
+    cursor: pointer;
+    background-color: #7e8c8d;
+    border-color: #7e8c8d;
+    box-shadow: 0 3px 0 #4e5b5c;
+    padding: 0.5em;
+}
+
+.btn.normal:hover {
+    background-color:#6a7879;
+}
+
+.btn.normal:active{
+    top: 3px;
+    outline: none;
+    box-shadow: none;
+}

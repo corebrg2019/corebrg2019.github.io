@@ -152,7 +152,8 @@ resize();
  */
 function initialize(id) {
 	window.request = {
-		command: "node",
+        command: "get",
+        target: "node",
 		id: id,
 		snmp: true
 	};

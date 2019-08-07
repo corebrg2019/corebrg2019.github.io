@@ -1175,7 +1175,8 @@ document.getElementById("setting").onclick = function () {
 
 if (window.name) {
 	postRequest({
-		command: "node",
+        command: "get",
+        target: "node",
 		id: window.name,
 		snmp: true
 	}, function (snmp) {

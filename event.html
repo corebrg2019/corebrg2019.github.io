@@ -175,8 +175,9 @@ ul {
 		}
 		
 		top.postRequest({
-			command: "log",
-			date: mills
+			command: "get",
+            target: "log",
+			date: mills.toString()
 		}, function () {
 			switch (this.status) {
 			case 200:

@@ -160,7 +160,7 @@ body:not(.edit) input[type=reset] {
 				</ul>
 			</div>
 			<footer>
-				<input type="reset" value="초기화" disabled>
+                <input type="reset" value="초기화" disabled>
 				<input type="submit" value="확인" disabled>
 			</footer>
 			<div class="bg_loading"></div>
@@ -189,21 +189,21 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-	var opener;
-
-	function postRequest(icon) {
-		document.body.classList.add("loading");
+	
+	form.onreset = function (e) {
+		e.preventDefault();
+	
+		if (!confirm("아이콘 설정을 초기화 하겠습니까?")) {
+			return;
+		}
 		
-		top.postRequest({
-			command: "put",
-			database: "setting",
-			key: "icon",
-			value: icon
+        top.postRequest({
+			command: "remove",
+			target: "icon",
+			type: form.elements["type"].value
 		}, function () {
 			switch (this.status) {
 			case 200:
-				top.setting.icon = icon;
-
 				reload();
 
 				break;
@@ -215,38 +215,48 @@ if (top.account.level === 0) {
 
 			document.body.classList.remove("loading");
 		});
-	}
-
-	form.onreset = function (e) {
-		e.preventDefault();
-	
-		if (!confirm("아이콘 설정을 초기화 하겠습니까?")) {
-			return;
-		}
-		
-		const icon = JSON.parse(JSON.stringify(top.setting.icon));
-
-		delete(icon[form.elements["type"].value]);
-
-		postRequest(icon);
 	};
 	
 	form.onsubmit = function (e) {
 		e.preventDefault();
 		
-		const icon = "icon" in top.setting? JSON.parse(JSON.stringify(top.setting.icon)): {};
-	
-		icon[form.elements["type"].value] = {
-			group: form.elements["group"].value,
-			src: form.elements["url"].value,
-			disabled: form.elements["disabled"].value,
-			texture: form.elements["texture"].value,
-			color: form.elements["color"].value,
-			unit: parseInt(form.elements["unit"].value),
-			top: form.elements["top"].value
-		};
+        const request = {
+            target: "icon",
+            type: form.elements["type"].value,
+            icon: {
+                group: form.elements["group"].value,
+                src: form.elements["url"].value,
+                disabled: form.elements["disabled"].value,
+                texture: form.elements["texture"].value,
+                color: form.elements["color"].value,
+                unit: parseInt(form.elements["unit"].value),
+                top: form.elements["top"].value
+            }
+        };
 
-		postRequest(icon);
+        if (form.elements["type"].disabled) {
+            // 수정
+            request.command = "set";
+        }
+        else {
+            // 생성
+            request.command = "add";
+        }
+        
+		top.postRequest(request, function () {
+			switch (this.status) {
+			case 200:
+				reload();
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+
+			document.body.classList.remove("loading");
+		});
 	};
 
 	function drawImage(input, url) {

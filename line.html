@@ -653,15 +653,15 @@ document.getElementById("ip2").onclick = sortIP;
 }) (document.querySelector("form"));
 
 top.postRequest({
-	command: "pull",
-	database: ["line", "node"]
+	command: "get",
+	target: ["path", "node"]
 }, function () {
 	switch (this.status) {
 	case 200:
-		const database = JSON.parse(this.responseText);
+		const target = JSON.parse(this.responseText);
 
-		window.line = database.line;
-		window.node = database.node;
+		window.line = target.line;
+		window.node = target.node;
 
 		initialize();
 

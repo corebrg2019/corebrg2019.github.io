@@ -523,7 +523,7 @@ function initialize() {
 
 	window.map.start();
 
-	document.querySelector("iframe.top").src ="/top.html";
+	//document.querySelector("iframe.top").src ="/top.html";
 
 	document.body.classList.remove("loading");
 }
@@ -533,16 +533,16 @@ function initialize() {
 		window.map = this.contentWindow;
 
 		top.postRequest({
-			command: "pull",
-			database: ["node", "line", "position"]
+			command: "get",
+			target: ["node", "position"]
 		}, function () {
 			switch (this.status) {
 			case 200:
-				const database = JSON.parse(this.responseText);
+				const target = JSON.parse(this.responseText);
 				
-				window.node = database.node;
-				window.line = database.line;
-				window.position = database.position;
+				window.node = target.node;
+				window.line = {};
+				window.position = target.position;
 
 				(id => {
 					if (id) {

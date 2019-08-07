@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>ITAhM Console</title>
+		<title>CeMS Console</title>
 		
 		<style>
 
@@ -140,8 +140,7 @@ function update() {
 	window.updateStart = new Date().getTime();
 
 	xhr.send(JSON.stringify({
-		command: "order",
-		order: "echo"
+		command: "echo"
 	}));
 }
 
@@ -220,8 +219,8 @@ function initialize (account) {
 	window.account = account;
 
 	postRequest({
-		command: "pull",
-		database: "setting"
+		command: "get",
+		target: "setting"
 	}, function () {
 		switch (this.status) {
 		case 200:
@@ -266,7 +265,7 @@ function postRequest(request, onResponse, timeout) {
 	
 	xhr.open("POST", window.agent, true);
 	xhr.withCredentials = true;
-	xhr.onloadend = onResponse.bind(xhr);
+	xhr.onloadend = onResponse;
 	
 	if (timeout) {
 		xhr.timeout = timeout;
@@ -378,7 +377,7 @@ function cancel() {
 				<div>
 					<ul class="logo">
 						<li>
-							<img src="/img/favicon2.png">
+							<img src="/img/logo.png">
 						</li>
 					</ul>
 					<ul class="icon">
@@ -458,7 +457,7 @@ function cancel() {
 				</form>
 				<h1>
 					<a href="/">
-						<img width="64" height="64" src="/img/favicon.png">
+						<img width="64" height="64" src="/img/logo.png">
 					</a>
 				</h1>
 			</div>

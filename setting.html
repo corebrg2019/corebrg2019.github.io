@@ -89,7 +89,7 @@ form select {
 	padding: 3px;
 }
 
-input[name="clean"] {
+input[name="store_date"] {
 	width: 50px;
 	text-align: right;
 }
@@ -306,9 +306,9 @@ function createItem(src, key, data, func) {
 				</form>
 			</p>
 			<p>
-				<form id="clean">
+				<form id="store_date">
 					데이터 보관 기간(일) :
-					<input type="number" min="0" max="365" name="clean">
+					<input type="number" min="0" max="365" name="store_date">
 					<input type="submit" value="적용" class="root">
 					<i>(데이터 정리 기능을 사용하지 않는 경우 0)</i>
 				</form>
@@ -436,9 +436,15 @@ function createItem(src, key, data, func) {
 				</form>
 			</p>
 			<p>
-				<form id="link">
-					기본 연결선 :
+				<form id="link_color">
+					기본 연결선 색 :
 					<input type="color" name="color" value="#d4af37">
+					<input type="submit" value="적용" class="root">
+				</form>
+            </p>
+            <p>
+				<form id="link_size">
+					기본 연결선 두께:
 					<input type="number" name="size" value="2" min="0">
 					PX
 					<input type="submit" value="적용" class="root">
@@ -523,15 +529,6 @@ function createItem(src, key, data, func) {
 			<div class="bg_loading"></div>
 		</form>
 		<h2>
-			<img width="24px" height="24px" src="/img/restore.png" class="logo">
-			백업 및 복구
-		</h2>
-		<form id="backup" class="container box">
-			설정 복구 : 
-			<input type="file" name="restore" value="복구" class="root">
-			<input type="submit" value="백업" class="root">
-		</form>
-		<h2>
 			<img width="24px" height="24px" src="/img/support.png" class="logo">
 			고객 지원
 		</h2>
@@ -545,9 +542,6 @@ function createItem(src, key, data, func) {
 		<script src="js/md5.js"></script>
 		<script>
 
-var 
-	backup = document.getElementById("backup");
-
 if (top.account.level > 0) {
 	[].forEach.call(document.querySelectorAll(".root"),
 		function (e) {
@@ -557,7 +551,8 @@ if (top.account.level > 0) {
 
 (function(container) {
 	top.postRequest({
-		command: "information"
+		command: "get",
+        target: "information"
 	}, function () {
 		switch (this.status) {
 			case 200:
@@ -565,13 +560,13 @@ if (top.account.level > 0) {
 
 				document.getElementById("java").textContent = information.java;
 				document.getElementById("version").textContent = information.version;
-				document.getElementById("resource").textContent = information.resource;
-				document.getElementById("usage").textContent = ITAhM.util.toBytesString(information.usage);
+				//document.getElementById("resource").textContent = information.resource;
+				//document.getElementById("usage").textContent = ITAhM.util.toBytesString(information.usage);
 				document.getElementById("space").textContent = ITAhM.util.toBytesString(information.space);
 				document.getElementById("path").textContent = information.path;
 				document.getElementById("expire").textContent
 					= information.expire > 0? new Date(information.expire).toLocaleString(): "";
-
+/*
 				const
 					orders = [].sort.call(Object.keys(information.load), function (a, b) {
 						return parseInt(b) - parseInt(a);
@@ -589,7 +584,7 @@ if (top.account.level > 0) {
 				}
 				
 				load.title = title.join(", ");
-
+*/
 				container.classList.remove("loading");	
 
 				break;
@@ -607,80 +602,10 @@ if (top.account.level > 0) {
 		top.showDialog.call(window, "/user_dialog.html");
 	};
 
-	container.onsubmit = function (e) {
-		e.preventDefault();
-
-		const smtp = {
-				server: container.elements["server"].value,
-				protocol: container.elements["protocol"].value || undefined,
-				username: container.elements["username"].value,
-				password: container.elements["password"].value
-			};
-
-			container.classList.add("loading");
-
-		top.postRequest({
-			command: "config",
-			key: "smtp",
-			value: smtp
-		}, function () {
-			switch(this.status) {
-			case 200:
-				alert("SMTP 서버와 연결하였습니다.");
-
-				break;
-			case 501:
-				alert("NMTP 서버에 연결할 수 없습니다.");
-				
-				break;
-
-			default:
-				alert(top.getMessage(this.status));
-			}
-
-			container.classList.remove("loading");
-		});
-	};
-
 	function onSelectUser(name, user) {
 		top.showDialog.call(window, "/user_dialog.html", name, user);
 	}
 	
-	window.initSMTP = function (smtp) {
-		if (smtp) {
-			server = container.elements["server"].value = smtp.server,
-			protocol = container.elements["protocol"].value = smtp.protocol || "",
-			username = container.elements["username"].value = smtp.username,
-			password = container.elements["password"].value = smtp.password,
-			smtpData = smtp && smtp.email;
-		}
-
-		top.postRequest({
-			command: "pull",
-			database: "user",
-		}, function () {
-			switch (this.status) {
-			case 200:
-				const
-					user = JSON.parse(this.responseText);
-					df = document.createDocumentFragment();
-
-				for (let name in user) {
-					df.appendChild(createItem("/img/email.png", name, user[name], onSelectUser));
-				}
-
-				document.getElementById("user_list").appendChild(df);
-
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-
-			container.classList.remove("loading");
-		});
-	};
 }) (document.getElementById("event"));
 
 (function(container) {
@@ -691,9 +616,10 @@ if (top.account.level > 0) {
 		container.classList.add("loading");
 		
 		top.postRequest({
-			command: "config",
+            command: "set",
+            target: "config",
 			key: "health",
-			value: (parseInt(this.elements["timeout"].value )& 0x0f) | (parseInt(this.elements["retry"].value) <<4)
+			value: ((parseInt(this.elements["timeout"].value )& 0x0f) | (parseInt(this.elements["retry"].value) <<4)).toString()
 		}, function () {
 			switch(this.status) {
 			case 200:
@@ -720,9 +646,10 @@ if (top.account.level > 0) {
 		container.classList.add("loading");
 		
 		top.postRequest({
-			command: "config",
+			command: "set",
+            target: "config",
 			key: "snmpInterval",
-			value: parseInt(this.elements["snmp_interval"].value)
+			value: this.elements["snmp_interval"].value
 		}, function () {
 			switch(this.status) {
 			case 200:
@@ -739,15 +666,16 @@ if (top.account.level > 0) {
 		});	
 	};
 
-	document.getElementById("clean").onsubmit = function (e) {	
+	document.getElementById("store_date").onsubmit = function (e) {	
 		e.preventDefault();
 
 		window.common.classList.add("loading");
 
 		top.postRequest({
-			command: "config",
-			key: "clean",
-			value: parseInt(this.elements["clean"].value) || 0
+			command: "set",
+            target: "config",
+			key: "storeDate",
+			value: this.elements["store_date"].value || "0"
 		}, function (response) {
 			switch (this.status) {
 			case 200:
@@ -770,9 +698,10 @@ if (top.account.level > 0) {
 		container.classList.add("loading");
 		
 		top.postRequest({
-			command: "config",
+			command: "set",
+            target: "config",
 			key: "saveInterval",
-			value: parseInt(this.elements["save_interval"].value)
+			value: this.elements["save_interval"].value
 		}, function () {
 			switch(this.status) {
 			case 200:
@@ -795,9 +724,10 @@ if (top.account.level > 0) {
 		document.body.classList.add("loading");
 		
 		top.postRequest({
-			command: "config",
+			command: "set",
+            target: "config",
 			key: "top",
-			value: Math.max(this.elements["top"].value, 1)
+			value: Math.max(this.elements["top"].value, 1).toString()
 		}, function (response) {
 			switch(this.status) {
 			case 200:
@@ -815,14 +745,14 @@ if (top.account.level > 0) {
 	};
 
 	top.postRequest({
-		command: "pull",
-		database: "config"
+		command: "get",
+		target: "config"
 	}, function () {
 		switch (this.status) {
 			case 200:
 				const config = JSON.parse(this.responseText);
 				
-				document.querySelector("input[name=clean]").value = "clean" in config? config.clean: 0;
+				document.querySelector("input[name=store_date]").value = "storeDate" in config? config.storeDate: 0;
 				document.querySelector("select[name=save_interval]").value = "saveInterval" in config? config.saveInterval: 1;
 				document.querySelector("input[name=top]").value = "top" in config? config.top: 10;
 				document.querySelector("select[name=snmp_interval]").value = "snmpInterval" in config? config.snmpInterval: 10000;
@@ -831,8 +761,6 @@ if (top.account.level > 0) {
 					document.querySelector("select[name=timeout]").value =  0x0f & config.health;
 					document.querySelector("select[name=retry]").value = 0x0f & (config.health >> 4);
 				}
-
-				initSMTP(config.smtp);
 
 				container.classList.remove("loading");
 
@@ -848,14 +776,19 @@ if (top.account.level > 0) {
 (function (container) {
 	
 	function postRequest(key, value, callback) {
+        const request = {
+			command: "set",
+			target: "setting",
+			key: key
+		};
+
+        if (value) {
+            request.value = value;
+        }
+
 		container.classList.add("loading");
 
-		top.postRequest({
-			command: "put",
-			database: "setting",
-			key: key,
-			value: value
-		}, function () {
+		top.postRequest(request, function () {
 			switch(this.status) {
 			case 200:
 				top.setting[key] = value;
@@ -884,9 +817,9 @@ if (top.account.level > 0) {
 	document.getElementById("menu").onsubmit = function (e) {
 		e.preventDefault();
 		
-		postRequest("menu", this.elements["menu"].value === "true", function (key, value) {
-			top.setMenu(value);
-		});
+		postRequest("menu", this.elements["menu"].value, function () {
+            top.location.reload();
+        });
 	};
 
 	document.getElementById("background").onsubmit = function (e) {
@@ -916,7 +849,7 @@ if (top.account.level > 0) {
 			customs[i] = customs[i].trim();
 		}
 		
-		postRequest("customLine", customs.join(","));
+		postRequest("customLink", customs.join(","));
 	};
 
 	document.getElementById("dashboard").onsubmit = function (e) {
@@ -972,13 +905,16 @@ if (top.account.level > 0) {
 		});
 	});
 
-	document.getElementById("link").onsubmit = function (e) {
+	document.getElementById("link_color").onsubmit = function (e) {
 		e.preventDefault();
 		
-		postRequest("link", {
-			color: this.elements["color"].value,
-			size: Math.max(this.elements["size"].value, 0)
-		});
+		postRequest("linkColor", this.elements["color"].value);
+	};
+
+    document.getElementById("link_size").onsubmit = function (e) {
+		e.preventDefault();
+		
+		postRequest("linkSize", Math.max(this.elements["size"].value, 0).toString());
 	};
 
 	if("display" in top.setting) {
@@ -1002,9 +938,9 @@ if (top.account.level > 0) {
 			.value = top.setting.custom.split(",").join(", ");
 	}
 	
-	if ("customLine" in top.setting) {
+	if ("customLink" in top.setting) {
 		document.getElementById("line").querySelector("[name=custom]")
-			.value = top.setting.customLine.split(",").join(", ");
+			.value = top.setting.customLink.split(",").join(", ");
 	}
 
 	if ("dashboard" in top.setting) {
@@ -1025,7 +961,14 @@ if (top.account.level > 0) {
 		});
 	}
 
-	if ("link" in top.setting) {
+	if ("linkColor" in top.setting) {
+		const link = document.getElementById("link");
+
+		link.querySelector("[name=color]").value = top.setting.link.color;
+		link.querySelector("[name=size]").value = top.setting.link.size;
+	}
+
+    if ("linkSize" in top.setting) {
 		const link = document.getElementById("link");
 
 		link.querySelector("[name=color]").value = top.setting.link.color;
@@ -1049,8 +992,8 @@ if (top.account.level > 0) {
 	}
 	
 	top.postRequest({
-		command: "pull",
-		database: "account",
+		command: "get",
+		target: "account",
 	}, function () {
 		switch (this.status) {
 		case 200:
@@ -1091,8 +1034,8 @@ if (top.account.level > 0) {
 	}
 
 	top.postRequest({
-		command: "pull",
-		database: "profile"
+		command: "get",
+		target: "profile"
 	}, function () {
 		switch (this.status) {
 			case 200:
@@ -1116,90 +1059,6 @@ if (top.account.level > 0) {
 		}
 	});
 }) (document.getElementById("profile"));
-
-backup.onsubmit = function (e) {
-	e.preventDefault();
-	
-	document.body.classList.add("loading");
-	
-	top.postRequest({
-		command: "order",
-		order: "backup"
-	}, function () {
-		switch (this.status) {
-		case 200:
-		ITAhM.util.download(new Blob([this.responseText], {
-			type: "text/json;charset=utf-8;"}), (function (d){
-				const a = ["backup_", d.getFullYear()];
-				let n = d.getMonth() +1;
-				
-				a[a.length] = n > 9? n: ("0"+ n);
-				
-				n = d.getDate();
-				
-				a[a.length] = n > 9? n: ("0"+ n);
-				
-				return a.join("");
-			})(new Date()));
-
-			break;
-		default:
-			alert(top.getMessage(this.status));
-
-			console.log(this.responseText && JSON.parse(this.responseText).error);
-		}
-
-		document.body.classList.remove("loading");
-	});
-};
-
-backup.elements["restore"].onchange = function (e) {
-	var file = e.target.files[0],
-		reader = new FileReader();
-	
-	reader.onload = function () {
-		document.body.classList.add("loading");
-		try {
-			const backup = JSON.parse(this.result);
-
-			if (!confirm("복구 과정이 시작되면 되돌릴수 없습니다.\n계속 하겠습니까?")) {
-				return;
-			}
-		}
-		catch (e) {
-			alert("복구할 수 없는 파일 형식입니다.");
-
-			return;
-		}
-
-		top.postRequest({
-			command: "order",
-			order: "restore",
-			database: backup
-		}, function () {
-			switch (this.status) {
-			case 200:
-				alert("복구가 완료되었습니다.");
-
-				top.location.reload();
-				
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-
-			document.body.classList.remove("loading");	
-		});
-	};
-	
-	reader.onerror = function () {
-		alert("백업 파일을 읽어올 수 없습니다.")
-	};
-	
-	reader.readAsText(file);
-};
 
 (function(form) {
 	form.onsubmit = function (e) {

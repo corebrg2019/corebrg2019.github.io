@@ -241,7 +241,8 @@ function initPort(container, id) {
 	container.id = id;
 
 	top.postRequest({
-		command: "node",
+        command: "get",
+        target: "node",
 		id: id,
 		snmp: true
 	}, function () {
@@ -277,7 +278,8 @@ function setPort(id, dir, port) {
 	container.classList.add("loading");
 
 	top.postRequest({
-		command: "node",
+        command: "get",
+        target: "node",
 		id: id,
 		snmp: true
 	}, function () {
@@ -480,20 +482,24 @@ document.getElementById("close").onclick = close;
 		e.preventDefault();
 
 		const
-			line = {},
-			items = window.list.querySelectorAll("ul");
+            items = window.list.querySelectorAll("ul"),
+            request = {
+                target: "line",
+                key: window.id,
+                value: {}
+            };
 
 		if (items.length > 1) {
-			line[window.id1] = [];
-			line[window.id2] = [];
+			request.value[window.id1] = [];
+			request.value[window.id2] = [];
 
 			[].forEach.call(items, ul => {
-				line[window.id1].push("peer1" in ul.dataset? {
+				request.value[window.id1].push("peer1" in ul.dataset? {
 					index: ul.dataset.peer1,
 					name: ul.querySelector("li:nth-child(2)").textContent
 				}: null);
 				
-				line[window.id2].push("peer2" in ul.dataset? {
+				request.value[window.id2].push("peer2" in ul.dataset? {
 					index: ul.dataset.peer2,
 					name: ul.querySelector("li:nth-child(3)").textContent
 				}: null);
@@ -502,14 +508,14 @@ document.getElementById("close").onclick = close;
 		else if (items.length > 0) {
 			const ul = items[0];
 
-			line[window.id1] = "peer1" in ul.dataset? {
+			request.value[window.id1] = "peer1" in ul.dataset? {
 				index: ul.dataset.peer1,
 				name: ul.querySelector("li:nth-child(2)").textContent
 			}: null;
 
-			line[window.id2] = "peer2" in ul.dataset? {
+			request.value[window.id2] = "peer2" in ul.dataset? {
 				index: ul.dataset.peer2,
-				name: ul.querySelector("li:nth-child(2)").textContent
+				name: ul.querySelector("li:nth-child(3)").textContent
 			}: null;
 		}
 		else {
@@ -519,28 +525,32 @@ document.getElementById("close").onclick = close;
 		}
 
 		if (this.elements["option"].checked) {
-			line.option = {
+			request.value.option = {
 				color: this.elements["color"].value,
 				width: Math.max(this.elements["width"].value, 1)
 			};
 		}
 
 		if (Object.keys(window.custom).length > 0) {
-			line.custom = {};
+			request.value.custom = {};
 
 			for (var name in window.custom) {
-				line.custom[name] = window.custom[name].value;
+				request.value.custom[name] = window.custom[name].value;
 			}
 		}
 
 		document.body.classList.add("loading");
-		
-		top.postRequest({
-			command: "put",
-			database: "line",
-			key: window.id,
-			value: line
-		}, function () {
+        
+        if (document.body.classList.contains("edit")) {
+            // 수정
+            requqest.command = "set";
+        }
+        else {
+            // 생성
+            request.command = "add";
+        }
+
+		top.postRequest(request, function () {
 			switch(this.status) {
 			case 200:
 				reloadOpener();
@@ -559,17 +569,12 @@ document.getElementById("close").onclick = close;
 			return;
 		}
 
-		removeLine();
-	}
-
-	function removeLine() {
 		document.body.classList.add("loading");
 
 		top.postRequest({
-			command: "put",
-			database: "line",
-			key: window.id,
-			value: null
+			command: "remove",
+			target: "path",
+			id: window.id
 		}, function () {
 			switch(this.status) {
 			case 200:

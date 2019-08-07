@@ -105,7 +105,37 @@ body:not(.edit) input[type=reset] {
 }
 
 		</style>
+        <script>
+        
+function success() {
+    opener && opener.reload();
+                
+    top.closeDialog();
+}
 
+function failure() {
+}
+
+function onResponse() {
+    switch (this.status) {
+    case 200:
+        success();
+
+        break;
+    case 409:
+        failure();
+
+        break;
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+
+    document.body.classList.remove("loading");
+}
+    
+            </script>
 		<script>
 		
 function isIPv4(s) {
@@ -181,6 +211,11 @@ document.addEventListener("keydown", function (e) {
 document.getElementById("close").onclick = close;
 
 (function (form) {
+    const request = {
+        target: "node",
+        node: {}
+    };
+
 	(e => {
 		const
 			df = document.createDocumentFragment(),
@@ -212,12 +247,13 @@ document.getElementById("close").onclick = close;
 
 		document.body.classList.add("loading");
 
+        request.command = "remove";
+        
 		// 삭제
 		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id,
-			value: null
+			command: "remove",
+			target: "node",
+			id: window.id
 		}, function () {
 			switch (this.status) {
 			case 200:
@@ -244,21 +280,29 @@ document.getElementById("close").onclick = close;
 		document.body.classList.add("loading");
 
 		const
-			ip = form.elements["ip"].value,
+            ip = form.elements["ip"].value,
 			tcp = form.elements["tcp"].value.toString(),
-			base = {
-				role: "application",
-				ip: ip +":"+ tcp,
-				type: form.elements["type"].value,
-				name: form.elements["name"].value
-			};
-			
-		top.postRequest({
-			command: "put",
-			database: "node",
-			key: window.id || "",
-			value: base
-		}, function () {
+            request = {
+                target: "node",
+                node: {
+                    role: "application",
+                    ip: ip +":"+ tcp,
+                    type: form.elements["type"].value,
+                    name: form.elements["name"].value
+                }
+            };
+		
+        if (window.id) {
+            // 수정
+            request.command = "set";
+            request.id = window.id;
+        }
+        else {
+            // 생성
+            request.command = "add";
+        }
+
+		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
 				reloadOpener();
@@ -298,7 +342,8 @@ document.getElementById("close").onclick = close;
 
 		if (id) {
 			top.postRequest({
-				command: "node",
+				command: "get",
+                target: "node",
 				id: id
 			}, function () {
 				switch (this.status) {

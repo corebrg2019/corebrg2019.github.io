@@ -224,36 +224,6 @@ if (top.account.level === 0) {
 (function (form) {
 	let opener;
 
-	function postRequest(name, profile) {
-		document.body.classList.add("loading");
-		
-		top.postRequest({
-			command: "put",
-			database: "profile",
-			key: name,
-			value: profile
-		}, function () {
-			switch (this.status) {
-			case 200:
-				opener && opener.reload();
-				
-				top.closeDialog();
-
-				break;
-			case 409:
-				alert("사용중인 프로파일은 삭제할 수 없습니다.");
-
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-
-			document.body.classList.remove("loading");
-		});
-	}
-
 	[].forEach.call(document.querySelectorAll("input[name=version]"), function (version) {
 		version.onchange = function () {
 			form.className = this.value;
@@ -280,9 +250,36 @@ if (top.account.level === 0) {
 	};
 	
 	form.onreset = function(e) {
-		if (confirm("이 프로파일을 삭제하겠습니까?")) {
-			postRequest(form.elements["name"].value, null);
-		}
+		if (!confirm("이 프로파일을 삭제하겠습니까?")) {
+            return;
+        }
+        
+        document.body.classList.add("loading");
+		
+		top.postRequest({
+			command: "remove",
+			target: "profile",
+			name: name
+		}, function () {
+			switch (this.status) {
+			case 200:
+				opener && opener.reload();
+				
+				top.closeDialog();
+
+				break;
+			case 409:
+				alert("사용중인 프로파일은 삭제할 수 없습니다.");
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+
+			document.body.classList.remove("loading");
+		});
 	};
 
 	form.onsubmit = function (e) {
@@ -291,9 +288,13 @@ if (top.account.level === 0) {
 		var name = form.elements["name"].value,
 			version = document.querySelector("input[name=version]:checked").value,
 			request = {
-				name: name,
-				udp: form.elements["udp"].value,
-				version: version
+                target: "profile",
+                name: name,
+                profile: {
+                    name: name,
+                    udp: form.elements["udp"].value,
+                    version: version
+                }
 			};
 		
 		if (version === "v3") {
@@ -304,7 +305,7 @@ if (top.account.level === 0) {
 				return element.focus();
 			}
 			
-			request["user"] = element.value;
+			request.profile["user"] = element.value;
 			
 			if (form.elements["en_auth"].checked) {
 				element = form.elements["authentication"];
@@ -319,7 +320,7 @@ if (top.account.level === 0) {
 				}
 				
 				level++; // auth-nopriv
-				request["md5"] = element.value;
+				request.profile["md5"] = element.value;
 				
 				if (form.elements["en_priv"].checked) {
 					element = form.elements["privacy"];
@@ -333,11 +334,11 @@ if (top.account.level === 0) {
 						return element.select();
 					}
 					level++; //auth-priv
-					request["des"] = element.value;
+					request.profile["des"] = element.value;
 				}
 			}
 
-			request.level = level;
+			request.profile.level = level;
 		}
 		else {
 			var element = form.elements["community"];
@@ -346,10 +347,38 @@ if (top.account.level === 0) {
 				return element.focus();
 			}
 			
-			request.community = form.elements["community"].value;
+			request.profile.community = form.elements["community"].value;
 		}
+        
+        if (document.body.classList.contains("edit")) {
+            request.command = "set";
+        }
+        else {
+            request.command = "add";
+        }
+
+		document.body.classList.add("loading");
 		
-		postRequest(name, request);
+		top.postRequest(request, function () {
+			switch (this.status) {
+			case 200:
+				opener && opener.reload();
+				
+				top.closeDialog();
+
+				break;
+			case 409:
+				alert("사용중인 프로파일은 삭제할 수 없습니다.");
+
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+
+			document.body.classList.remove("loading");
+		});
 	};
 
 	window.initialize = function (name, profile) {
