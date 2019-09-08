@@ -75,61 +75,47 @@ header {
 	color: #000;
 }
 
+#add {
+    position: fixed; top: 1em; right: 1em;
+	border:none;
+	display:block;
+	width: 2em; height: 2em;
+	overflow:hidden;
+	color:#000;
+	background-color:#0ff;
+	text-align:center;
+	cursor:pointer;
+	white-space:nowrap;
+	user-select:none;
+	transition:opacity 0s;
+	font-weight: bold;
+	outline: none;
+	border-radius:50%;
+}
+
+#add:active{
+	opacity:0.5
+}
+
+#add:hover{
+  box-shadow:0 8px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+#add:disabled {
+  cursor:not-allowed;
+  opacity:0.3
+}
+
+#add:disabled:hover {
+  box-shadow:none
+}
+
 .layout {
-	display: none;
+    display: none;
 }
-
 		</style>
-		
-	</head>
-	
-	<body class="loading content_width">
-	
-		<ul id="list"></ul>
-		
-		<div class="bg_loading"></div>
-		
-		<div class="layout">
-			<ul>
-				<li class="group">
-					<h1></h1>
-				<li class="icon">
-					<div>
-						<img width="64" height="64">
-					</div>
-					<span></span>
-			</ul>
-		</div>
-		
-		<script>
-
-if (top === window) {
-	throw "";
-}
-
-var list = document.getElementById("list"),
-	icon = document.querySelector(".icon"),
-	group = document.querySelector(".group");
-
-(function () {
-	var iconData = {},
-		data, type;
-	
-	for (type in top.store.icon) {
-		iconData[type] = top.store.icon[type];
-	}
-	
-	if ("icon" in top.setting) {
-		for (type in top.setting.icon) {
-			iconData[type] = top.setting.icon[type];
-		}
-	}
-	
-	list.appendChild(initIcon(iconData));
-	
-	document.body.classList.remove("loading");
-}) ();
-
+        <script>
+        
 function onSelectIcon(type, icon) {
 	top.showDialog.call(window, "/icon_dialog.html", type, icon);
 }
@@ -178,6 +164,66 @@ function initIcon(iconData) {
 	
 	return df;
 }
+
+        </script>
+	</head>
+	
+	<body class="loading content_width">
+        <button id="add" title="아이콘 추가" class="root">+</button>
+		<ul id="list"></ul>
+        
+        		
+		<div class="layout">
+			<ul>
+				<li class="group">
+					<h1></h1>
+				<li class="icon">
+					<div>
+						<img width="64" height="64">
+					</div>
+					<span></span>
+			</ul>
+		</div>
+
+		<div class="bg_loading"></div>
+        
+        <script src='/js/ITAhM.js'></script>
+        <script src='/js/icon.js'></script>
+		<script>
+
+var list = document.getElementById("list"),
+	icon = document.querySelector(".icon"),
+	group = document.querySelector(".group"),
+    iconData = ITAhM.iconData;
+
+document.getElementById("add").onclick = e => {
+    top.showDialog.call(window, "/icon_dialog.html");
+};
+
+top.postRequest({
+    command: "get",
+    target: "icon"
+}, function () {
+    switch(this.status) {
+    case 200:
+        const iconData = JSON.parse(this.responseText);
+
+        for (let type in iconData) {
+            window.iconData[type] = iconData[type];
+        }
+
+        case 204:
+        window.list.appendChild(initIcon(window.iconData));
+
+        document.body.classList.remove("loading");
+
+        break;
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+});
 
 		</script>
 	

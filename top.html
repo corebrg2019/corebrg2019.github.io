@@ -240,7 +240,7 @@ function toBPSString(bandwidth) {
 	return bandwidth.toFixed(2) + unit[i];
 }
 
-function setTop(topList, section) {
+function setTop(topArray, section) {
 	if (!section) {
 		return;
 	}
@@ -254,22 +254,16 @@ function setTop(topList, section) {
 		section.removeChild(item);
 	}
 
-	topList.forEach(map => {
-		var value;
-
-		for (let id in map) {
-			value = map[id];
-
-			if (value.value || !skipZero) {
-				section.appendChild(createTopItem(id, toString(value.value), value.rate, section.id, value.index));
-			}
-		}
+	topArray.forEach(value => {
+        if (Number(value.value) || !skipZero) {
+            section.appendChild(createTopItem(value, toString));
+        }
 	});
 }
 
-function createTopItem(id, value, rate, resource, index) {
+function createTopItem(value, toString) {
 	var 
-		base = parent.node[id],
+		base = window.nodeData[value.id],
 		item = document.createElement("ul"),
 		bar;
 
@@ -279,27 +273,37 @@ function createTopItem(id, value, rate, resource, index) {
 	item.appendChild(document.createElement("li")).textContent = base.ip;
 	
 	bar = item.appendChild(document.createElement("li"));
-	bar.dataset.value = value;
+	bar.dataset.value = toString(Number(value.value));
 			
-	bar.appendChild(document.createElement("div")).style.width = toPercentageString(rate);
+	bar.appendChild(document.createElement("div")).style.width = toPercentageString(value.rate);
 		
-	bar.classList.add(rate > 90? "red": rate > 70? "orange": "green");
+	bar.classList.add(value.rate > 90? "red": value.rate > 70? "orange": "green");
 	
-	if (rate > -1) {
-		item.title = toPercentageString(rate);
+	if (value.rate > -1) {
+		item.title = toPercentageString(value.rate);
 	}
 	
 	item.onclick = function () {
-		top.showStatus(id);
+        window.sessionStorage.setItem("node_id", value.id);
+        window.sessionStorage.setItem("previous", "/dashboard.html");
+
+        parent.location.href = "/resource.html";
 	}
 	
 	bar.onclick = function (e) {
 		e.stopPropagation();
-		
-		top.showStatus(id, resource === "throughputErr"? "error": resource.replace("Rate", ""), index);
+        
+        //TODO
 	}
 	
 	return item;
+}
+
+/* public */
+function display() {
+    if ("display" in parent.setting) {
+	    document.body.classList[parent.setting.display == "name"? "add": "remove"]("name");
+    }
 }
 
 		</script>
@@ -309,31 +313,56 @@ function createTopItem(id, value, rate, resource, index) {
 	<body class="name">
 		<div id="list">
 			<section id="responseTime" data-func="toMillsString" title="응답시간"></section>
-			<section id="processor" data-func="toPercentageString" title="프로세서 로드"></section>
-			<section id="memory" data-func="toBytesString" title="메모리 사용량"></section>
+			<section id="hrProcessorLoad" data-func="toPercentageString" title="프로세서 로드"></section>
+			<section id="hrStorageMemory" data-func="toBytesString" title="메모리 사용량"></section>
 			<section id="memoryRate" data-func="toBytesString" data-rate="true" title="메모리 사용율(%)"></section>
-			<section id="storage" data-func="toBytesString" title="저장공간 사용량"></section>
+			<section id="hrStorageUsed" data-func="toBytesString" title="저장공간 사용량"></section>
 			<section id="storageRate" data-func="toBytesString" data-rate="true" title="저장공간 사용율(%)"></section>
-			<section id="throughput" data-func="toBPSString" title="통신 사용량"></section>
-			<section id="throughputRate" data-func="toBPSString" data-rate="true" title="통신 사용율(%)"></section>
-			<section id="throughputErr" data-func="toErrorString" data-zero="true" title="통신 오류"></section>
+			<section id="ifInOCtets" data-func="toBPSString" title="수신 사용량"></section>
+			<section id="ifOutOCtets" data-func="toBPSString" title="송신 사용량"></section>
+            <section id="ifInErrors" data-func="toErrorString" data-zero="true" title="수신 오류"></section>
+            <section id="ifoutErrors" data-func="toErrorString" data-zero="true" title="송신 오류"></section>
 		</div>
 		
 		<script>
 
 const INTERVAL = 8000;
-var request = {
+var
+    nodeData,
+    request = {
 		command: "get",
-		target: "top"
-	},
-	rafID;
+		target: "top",
+        list: parent.nodeList,
+        resource: {
+            ifInOCtets: {
+                count: 5
+            },
+            ifOutOCtets: {
+                count: 5
+            },
+            responseTime: {
+                count: 5
+            },
+            hrStorageUsed: {
+                count: 5
+            },
+            hrStorageMemory: {
+                count: 5
+            },
+            hrProcessorLoad: {
+                count: 5
+            },
+            ifInErrors: {
+                count: 5
+            },
+            ifoutErrors: {
+                count: 5
+            }
+        }
+	};
 
 if ("display" in top.setting && top.setting.display !== "name") {
 	document.body.classList.remove("name");
-}
-
-if (top.store.parent) {
-	window.request.top = parent.topList;
 }
 
 initialize();
@@ -342,10 +371,10 @@ function reload() {
 	top.postRequest(window.request, function () {
 		switch (this.status) {
 		case 200:
-			const map = JSON.parse(this.responseText);
+			const topData = JSON.parse(this.responseText);
 
-			for (let id in map) {
-				setTop(map[id], document.getElementById(id));
+			for (let resource in topData) {
+				setTop(topData[resource], document.getElementById(resource));
 			}
 
 			break;
@@ -361,7 +390,23 @@ function reload() {
 	}, INTERVAL);
 }
 
-reload();
+top.postRequest({
+    command: "get",
+    target: "node"
+}, function () {
+    switch (this.status) {
+    case 200:
+        window.nodeData = JSON.parse(this.responseText);
+
+        reload();
+
+        break;
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+});
 
 		</script>
 	

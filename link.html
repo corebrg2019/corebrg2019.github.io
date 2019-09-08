@@ -281,53 +281,24 @@ function IP2Int(s) {
 		
 		<script>
 
-//public
-function reload() {
-	window.location.reload();
-}
-
-function onEdit() {
-	switch(window.node[window.selectedID].type) {
-	case "application": top.showDialog.call(window, "/app_dialog.html", window.selectedID);
-		break;
-	case "group": top.showDialog.call(window, "/group_dialog.html", window.selectedID);
-		break;
-	default: top.showDialog.call(window, "/device_dialog.html", window.selectedID);
-	}
-}
-
-function onShowStatus() {
-    window.sessionStorage.setItem("node_id", window.selectedID);
-
-    window.location.href = "/resource.html";
-}
-
-function initialize() {
-	if ("customLine" in top.setting) {
-		var customs = top.setting.customLine;
-		
-		if (customs) {
-			const df = document.createDocumentFragment();
-			
-			window.customs = customs.split(",");
-			
-			window.customs.forEach(function (custom) {
-				df.appendChild(document.createElement("li")).textContent = custom;
-			});
-			
-			window.header.appendChild(df);
-		}
-	}
-	
+function initList() {
 	const df = document.createDocumentFragment();
-	var row;
+	var paths, links, row;
 
-	for (let id in window.line) {
-		row = createRow(id, window.line[id]);
+    for (let nodeFrom in window.linkData) {
+        paths = window.linkData[nodeFrom];
 
-		if (row) {
-			df.appendChild(row);
-		}
+        for (let nodeTo in paths) {
+            links = paths[nodeTo];
+
+            for (let id in links) {
+                row = createRow(nodeFrom, nodeTo, id, links[id]);
+
+                if (row) {
+                    df.appendChild(row);
+                }
+            }
+        }
 	}
 
 	window.list.appendChild(df);
@@ -337,49 +308,33 @@ function initialize() {
 	document.getElementById("count").textContent = count();
 }
 
-function createRow(id, line) {
-	const ar = id.split("."),
-		id1 = "node."+ ar[1],
-		id2 = "node."+ ar[2],
-		base1 = window.node[id1],
-		base2 = window.node[id2],
-		line1 = line[id1],
-		line2 = line[id2],
+function createRow(nodeFrom, nodeTo, id, link) {
+	const 
+		node1 = window.nodeData[nodeFrom],
+		node2 = window.nodeData[nodeTo],
 		row = document.createElement("ul");
-	var	type, labels, label, li4, li7;
 	
-	if (!base1 || !base2) {
+	if (!node1 || !node2) {
 		return;
 	}
 
 	row.appendChild(document.createElement("li")); // N.1
 	
-	row.appendChild(document.createElement("li")).textContent = base1.ip || ""; // N.2
-	row.appendChild(document.createElement("li")).textContent = base1.name || ""; // N.3
-	li4 = row.appendChild(document.createElement("li")); // N.4
-	row.appendChild(document.createElement("li")).textContent = base2.ip || ""; // N.5
-	row.appendChild(document.createElement("li")).textContent = base2.name || ""; // N.6
-	li7 = row.appendChild(document.createElement("li"));// N.7
+	row.appendChild(document.createElement("li")).textContent = node1.ip || ""; // N.2
+	row.appendChild(document.createElement("li")).textContent = node1.name || ""; // N.3
+	row.appendChild(document.createElement("li")).textContent = link.indexFrom || ""; // N.4
+	row.appendChild(document.createElement("li")).textContent = node2.ip || ""; // N.5
+	row.appendChild(document.createElement("li")).textContent = node2.name || ""; // N.6
+	row.appendChild(document.createElement("li")).textContent = link.indexTo || "";// N.7
 	
-	if (Array.isArray(line1)) {
-		line1.forEach((line, i) => {
-			li4.appendChild(document.createElement("p")).textContent = line? line.name: "";
-			li7.appendChild(document.createElement("p")).textContent = line2[i]? line2[i].name: "";
-		});
-	}
-	else {
-		li4.textContent = line1? line1.name: "";
-		li7.textContent = line2? line2.name: "";
-	}
-	
-	if (window.customs) {
-		if (line.custom) {
-			window.customs.forEach(function (custom) {
-				row.appendChild(document.createElement("li")).textContent = line.custom[custom] || "";
+	if (window.customData) {
+		if (link.extra) {
+			window.customData.forEach(function (custom) {
+				row.appendChild(document.createElement("li")).textContent = link.extra[custom] || "";
 			});
 		}
 		else {
-			window.customs.forEach(function (custom) {
+			window.customData.forEach(function (custom) {
 				row.appendChild(document.createElement("li"));
 			});
 		}
@@ -388,99 +343,32 @@ function createRow(id, line) {
 	row.id = id;
 	
 	row.onclick = function () {
-		top.store.focus = this.id;
-		
-		top.selectMenu("dashboard");
 	};
 	
 	return row;
 }
 
-
-// 선택 초기화 (상태별로 필터링)
-function onSelectStatus (src, className) {	
-	document.body.classList.remove("normal", "critical", "shutdown", "disabled");
-	
-	if (className) {
-		document.body.classList.add(className);
-	}
-	
-	icon.src = src;
-	
-	window.selector.blur();
-}
-
 function onSave() {
-	const row = [];
-	var
-		columns = ["IP","Name","Interface","IP","Name","Interface"],
-		base, line, ar, id1, id2;
-	
-	if (window.customs) {
-		window.customs.forEach(function (custom) {
-			columns.push(custom);
-		});
-	}
+    const data = [];
+    var record = [];
 
-	row[0] = columns.join(",");
+    [].forEach.call(window.header.children, function (col) {
+        record.push(col.textContent);
+    });
 
-	for (let id in window.line) {
-		line = window.line[id];
-		ar = id.split(".");
-		id1 = "node."+ ar[1];
-		id2 = "node."+ ar[2];
+    data[0] = record.join(",");
 
-		columns = [];
+    [].forEach.call(window.list.children, function (row) {
+        record = [];
 
-		if (id1 in window.node) {
-			base = window.node[id1];
+        [].forEach.call(row.children, function (col) {
+            record.push(col.textContent);
+        });
 
-			columns.push(base.ip || "", base.name || "");
-		}
-		else {
-			columns.push("", "");
-		}
+        data.push(record.join(","));
+    });
 
-		if (id1 in line) {	
-			columns.push(line[id1].name || "");
-		}
-		else {
-			columns.push("");
-		}
-		
-		if (id2 in window.node) {
-			base = window.node[id2];
-
-			columns.push(base.ip || "", base.name || "");
-		}
-		else {
-			columns.push("", "");
-		}
-		
-		if (id2 in line) {	
-			columns.push(line[id2].name || "");
-		}
-		else {
-			columns.push("");
-		}
-
-		if (window.customs) {
-			if ("custom" in line) {
-				window.customs.forEach(function (custom) {
-					columns.push(line.custom[custom] || "");
-				});
-			}
-			else {
-				window.customs.forEach(function (custom) {
-					columns.push("");
-				});
-			}
-		}
-
-		row.push(columns);
-	}
-	
-	ITAhM.util.download(new Blob(["\ufeff", row.join("\n")] ,{
+    ITAhM.util.download(new Blob(["\ufeff", data.join("\n")] ,{
 		type: "text/csv;charset=utf-8;"
 	}), "line.csv");
 }
@@ -580,9 +468,9 @@ var
 	header = document.getElementById("header"),
 	list = document.getElementById("list"),
 	selector = document.querySelector(".selector"),	
-	customs;
+	customData;
 
-document.getElementById("save").onclick = onSave;
+    document.getElementById("save").onclick = onSave;
 
 document.getElementById("ip1").onclick = sortIP;
 document.getElementById("ip2").onclick = sortIP;
@@ -654,27 +542,60 @@ document.getElementById("ip2").onclick = sortIP;
 	}
 }) (document.querySelector("form"));
 
-top.postRequest({
-	command: "get",
-	target: ["path", "node"]
-}, function () {
-	switch (this.status) {
-	case 200:
-		const target = JSON.parse(this.responseText);
+function initialize() {
+    top.postRequest({
+        command: "get",
+        target: ["link", "node"]
+    }, function () {
+        switch (this.status) {
+        case 200:
+            const target = JSON.parse(this.responseText);
 
-		window.line = target.line;
-		window.node = target.node;
+            window.linkData = target.link;
+            window.nodeData = target.node;
 
-		initialize();
+            initList();
 
-		break;
-	default:
-		alert(top.getMessage(this.status));
+            break;
+        default:
+            alert(top.getMessage(this.status));
 
-		console.log(this.responseText && JSON.parse(this.responseText).error);
-	}
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
 });
+}
 
+function initCustom(customs) {
+    const df = document.createDocumentFragment();
+    
+    window.customData = customs.split(",");
+    
+    window.customData.forEach(function (custom) {
+        df.appendChild(document.createElement("li")).textContent = custom;
+    });
+    
+    window.header.appendChild(df);
+}
+
+top.postRequest({
+    command: "get",
+    target: "setting",
+    key: "customLink",
+}, function () {
+    switch(this.status) {
+    case 200:
+        initCustom(JSON.parse(this.responseText).customLink);
+
+    case 204:
+        initialize();
+        
+        break;
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+});
 </script>
 	
 	</body>

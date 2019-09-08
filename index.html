@@ -8,9 +8,16 @@
 
 @import "/css/index.css";
 
-body.auto header >div {
-	width: 0;
-	transition: 0.5s width;
+body.auto header {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    transition: 0.5s;
+    background-color: #4d525a;
+}
+
+body.auto header:hover {
+    transform: none;
 }
 
 body.auto header::after {
@@ -24,35 +31,11 @@ body.auto header::after {
 	transform: translateY(-50%);
 }
 
-body.auto header:hover >div {
-	width: 80px;
-}
-
 
 		</style>
 		<script src="js/google.js"></script>
 
 		<script>
-//public
-function showStatus(id, resource, index) {
-	var	statusWindow = window.statusWindow[id];
-
-	if (statusWindow && !statusWindow.closed) {
-		statusWindow.close();
-	}
-	
-	statusWindow = window.open("/status.html", id);
-	
-	window.statusWindow[id] = statusWindow;
-	
-	if (resource) {
-		statusWindow.onload = function () {
-			statusWindow.selectResource(resource, index);
-		};
-	}
-	
-	statusWindow.focus();
-}
 
 // public
 function setMenu(showMenu) {
@@ -154,7 +137,7 @@ function onEvent(e) {
 	if (this.status === 200) {
 		const event = JSON.parse(this.responseText);
 		
-		window.listener.event = (parseInt(event.event) +1).toString();
+		window.listener.eventID = (parseInt(event.eventID) +1).toString();
 		
 		window.logCount++;
 		
@@ -165,22 +148,22 @@ function onEvent(e) {
 		case "status":
 		case "snmp":
 		case "updown":
-			if (!event.status) {
-				try {
-					window.sound.play();
-				} catch (e) {
-					console.log(e);
-				};
-			}
-
 			break;
 
-		case "test":
+		case "register":
 		case "search":
 		case "system":
 		case "warning":
 			break;
 		}
+
+        if (event.level == 2) {
+            try {
+                window.sound.play();
+            } catch (e) {
+                console.log(e);
+            };
+        }
 
 		window.log.textContent = event.message;
 
@@ -226,7 +209,7 @@ function initialize (account) {
 		case 200:
 			window.setting = JSON.parse(this.responseText);
 			
-			setMenu(window.setting.menu);
+			setMenu(window.setting.menu === "true");
 
 			update();
 
@@ -325,7 +308,7 @@ function trySignIn(username) {
 				initialize(JSON.parse(this.responseText));
 			}
 			catch(e) {
-				alert("서비스가 비정상 종료 되었습니다.\n"+
+				alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
 				"모든 브라우저를 닫고 다시 시작하십시오.");
 			}
 			
@@ -353,7 +336,7 @@ function trySignIn(username) {
 }
 
 function onSignOut() {
-	if (confirm("로그아웃 하겠습니까?")) {
+	if (confirm("Conritm.\n\n로그아웃 하겠습니까?")) {
 		window.signout = true;
 
 		postRequest({
@@ -365,7 +348,9 @@ function onSignOut() {
 }
 
 function cancel() {
-	window.location.href = "/";
+	window.localStorage.removeItem("agent");
+
+    window.location.reload();
 }
 
 		</script>
@@ -381,7 +366,13 @@ function cancel() {
 						</li>
 					</ul>
 					<ul class="icon">
-						<li>
+                        <li>
+							<a href="/top/throughput.html" id="dashboard" target="main" class="selected">
+								<img src="/img/logo.png">
+							</a>
+							테스트
+						</li>
+                        <li>
 							<a href="/dashboard.html" id="dashboard" target="main" class="selected">
 								<img src="/img/header/dashboard.png">
 							</a>
@@ -393,11 +384,11 @@ function cancel() {
 							</a>
 							노드
 						</li>
-						<li>
-							<a href="/line.html" id="line" target="main">
+                        <li>
+							<a href="/link.html" id="line" target="main">
 								<img src="/img/header/line.png">
 							</a>
-							회선
+							링크
 						</li>
 						<li>
 							<a href="/event.html" id="event" target="main">
@@ -437,7 +428,8 @@ function cancel() {
 		</article>
 		<article class="signin">
 			<div class="signin">
-				<h1>Connect to agent</h1>
+                <h1>Connect to agent</h1>
+                <h2 id="agent"></h2>
 				<form id="connect" class="set">
 					<p>IP Address</p>
 					<input type="text" name="ip" placeholder="IP address" autofocus required>
@@ -565,8 +557,9 @@ document.querySelector("div.log").onclick = function () {
 			switch(this.status) {
 			case 200:
 			case 400:
-				window.location.href = "?"+ agent;
-				
+				window.localStorage.setItem("agent", agent);
+
+                window.location.reload();
 				break;
 			case 503:
 				alert("아이탐 에이전트 서비스가 준비중입니다.");
@@ -593,6 +586,8 @@ document.querySelector("div.log").onclick = function () {
 				
 				window.agent = "http://" + agent;
 				
+                document.getElementById("agent").textContent = agent;
+
 				return trySignIn(signin.elements["username"]);
 			}
 		}
@@ -602,7 +597,7 @@ document.querySelector("div.log").onclick = function () {
 	else {
 		document.body.classList.add("ready");
 	}
-})(window.location.search && window.location.search.substring(1));
+})(window.localStorage.getItem("agent"));
 
 (function (list) {
 	function remove(a) {

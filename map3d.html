@@ -14,19 +14,6 @@ canvas {
     width: 100%; height: 100%;
 }
 
-nav {
-	position: absolute; top: 0; right: 0;
-	padding: 5px;
-	background-color: #ddd;
-}
-
-nav >img {
-	display: block;
-}
-
-nav >img:not(:nth-of-type(1)) {
-	border-top: 1px solid #777;
-}
         </style>
         <script src="/js/three.js"></script>
         <script src="/js/OrbitControls.js"></script>
@@ -41,9 +28,9 @@ function start() {
     if (parent.upper) {
         const
             id = parent.upper,
-            mesh = addNode(id, parent.node[id], UPPER_POS);
+            mesh = addNode(id, UPPER_POS);
 
-        mesh.onclick = parent.moveStage.bind(mesh, parent.position[id].parent);
+        mesh.onclick = parent.moveStage.bind(mesh, parent.posData[id].parent);
     }
 
     render();
@@ -53,9 +40,19 @@ function start() {
     document.body.classList.remove("loading");
 }
 
-function addNode(id, base, pos, status) {
-    const mesh = getMesh(base.type);
+function display() {
+    if ("display" in parent.setting) {
+	    document.body.classList[parent.setting.display == "name"? "add": "remove"]("name");
+    }
+}
+
+function addNode(id, pos) {
+    const
+        base = parent.nodeData[id],
+        mesh = getMesh(base.type);
     
+    pos = pos || parent.posData[id];
+
     mesh.position.x += pos.x;
     mesh.position.y += pos.z || 0;
     mesh.position.z += pos.y;
@@ -75,7 +72,10 @@ function addNode(id, base, pos, status) {
     }
     else if (base.protocol === "snmp") {
         mesh.onclick = () => {
-            top.showStatus(id);
+            window.sessionStorage.setItem("node_id", id);
+            window.sessionStorage.setItem("previous", "/dashboard.html");
+
+            window.location.href = "/resource.html";
         }
     }
     
@@ -103,14 +103,14 @@ function drawLine(id, line) {
 	}
     
     var
-        pos1 = parent.position[id1],
-        pos2 = parent.position[id2];
+        pos1 = parent.posData[id1],
+        pos2 = parent.posData[id2];
 
     if (!(id1 in nodeMap)) {
         const id = parent.findParentFromStage(pos1.parent);
 
         if (id) {
-            pos1 = parent.position[id];
+            pos1 = parent.posData[id];
         }
         else if (parent.upper) {
             pos1 = UPPER_POS;
@@ -124,7 +124,7 @@ function drawLine(id, line) {
         const id = parent.findParentFromStage(pos2.parent);
 
         if (id) {
-            pos2 = parent.position[id];
+            pos2 = parent.posData[id];
         }
         else  if (parent.upper) {
             pos2 = UPPER_POS;
@@ -392,12 +392,7 @@ function getMesh(type = "unknown") {
             </script>
         </head>
         
-        <body class="loading">
-            <nav>
-                <img src="/img/zoomi.png" width="16" height="16" title="전체화면에서 편집" id="edit">
-                <img src="/img/num2.png" width="16" height="16" title="2D 맵" id="twod">
-                <img src="/img/eye.png" width="16" height="16" title="Sky View" id="sky">
-            </nav>
+        <body class="loading  name">
             <div class="bg_loading"></div>
         <script>
 
@@ -468,17 +463,7 @@ camera.position.set(0, 300, 500);
 
 rotationX.makeRotationX(Math.PI /2);
 
-document.getElementById("twod").onclick = function () {
-    top.store.map3d = false;
-    
-	parent.location.href = "/dashboard.html";
-};
-
-document.getElementById("sky").onclick = skyView;
-
-document.getElementById("edit").onclick = function () {
-	parent.location.href = "/map_edit.html";
-};
+//document.getElementById("sky").onclick = skyView;
 
 renderer.domElement.addEventListener("mousedown", onMouseDown);
 renderer.domElement.addEventListener("mouseup", onMouseUp);

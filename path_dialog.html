@@ -72,8 +72,6 @@ footer input:hover {
 }
 
 table {
-    border-collapse:collapse;
-    border: 1px solid #aaa;
     width: 100%;
     margin-top: 1em;
 }
@@ -87,7 +85,8 @@ td, th {
     padding: 3px;
 }
 
-td >input[type=text] {
+td >input[type=text],
+td >input[type=number] {
     padding: 0.5em;
     width: 100%;
     box-sizing: border-box;
@@ -263,17 +262,17 @@ body.initialized input[name=create] {
                         <tr>
                             <th>선 종류</th>
                             <td><input type="checkbox" name="use_type"></td>
-                            <td><input type="text" name="type" value="기본" required disabled></td>
+                            <td><input type="text" name="type" placeholder="기본" required disabled></td>
                         </tr>
                         <tr>
                             <th>선 색상</th>
                             <td><input type="checkbox" name="use_color"></td>
-                            <td><input type="text" name="color" value="기본" required disabled></td>
+                            <td><input type="text" name="color" placeholder="기본" required disabled></td>
                         </tr>
                         <tr>
                             <th>선 두께</th>
                             <td><input type="checkbox" name="use_size"></td>
-                            <td><input type="text" name="size" value="기본" required disabled></td>
+                            <td><input type="number" name="size" placeholder="기본" required disabled></td>
                         </tr>
                     </table>
                     
@@ -305,43 +304,28 @@ document.addEventListener("keydown", function (e) {
 document.getElementById("close").onclick = close;
 
 (function (form) {
-    const customLink = {};
+    const customInputMap = {};
 	var opener, nodeFrom, nodeTo, linkData;
 
 	if (top.account.level === 0) {
 		document.querySelector("input[type=reset]").disabled = false;
 		document.querySelector("input[type=submit]").disabled = false;
-
-		//form.onreset = onRemoveLine;
 	}
 
-    form.elements["use_color"].onclick = e => {
-        const colorElement = form.elements["color"];
+    ["type", "color", "size"].forEach(name => {
+        form.elements["use_"+ name].onclick = e => {
+            const element = form.elements[name];
 
-        if (e.currentTarget.checked) {
-            colorElement.value = "";
-            colorElement.disabled = false;
-            colorElement.focus();
-        }
-        else {
-            colorElement.value = "기본";
-            colorElement.disabled = true;
-        }
-    };
-
-    form.elements["use_size"].onclick = e => {
-        const sizeElement = form.elements["size"];
-
-        if (e.currentTarget.checked) {
-            sizeElement.value = "";
-            sizeElement.disabled = false;
-            sizeElement.focus();
-        }
-        else {
-            sizeElement.value = "기본";
-            sizeElement.disabled = true;
-        }
-    };
+            if (e.currentTarget.checked) {
+                element.disabled = false;
+                element.focus();
+            }
+            else {
+                element.value = "";
+                element.disabled = true;
+            }
+        };
+    });
 
     form.elements["create"].onclick = e => {
         document.body.classList.add("loading");
@@ -353,14 +337,14 @@ document.getElementById("close").onclick = close;
             nodeTo: nodeTo
         }, function () {
             switch(this.status) {
-			case 200:
-				document.body.classList.add("initialized");
+            case 200:
+                opener.location.reload();
 
-                document.body.classList.remove("loading");
+                window.location.reload();
 
-				break;
+                break;
             case 409:
-                alert("오류!\n\n경로 생성 실패.");
+                alert("Error!\n\n경로 생성 실패.");
 
                 break;
 			default:
@@ -369,8 +353,6 @@ document.getElementById("close").onclick = close;
 				console.log(this.responseText && JSON.parse(this.responseText).error);
 			}
         });
-
-        document.body.classList.remove("loading");
     }
 
     form.elements["add_link"].onclick = e => {
@@ -384,8 +366,10 @@ document.getElementById("close").onclick = close;
         }, function () {
             switch(this.status) {
             case 409:                
-                alert("오류!\n\n링크 추가 실패.");
+                alert("Error!\n\n링크 추가 실패.");
             case 200:
+                opener.location.reload();
+
                 window.location.reload();
 
                 break;
@@ -412,11 +396,11 @@ document.getElementById("close").onclick = close;
             link.indexTo = document.getElementById("index_to").value;
         }
 
-        if (Object.keys(customLink).length > 0) {
+        if (Object.keys(customInputMap).length > 0) {
             const extra = {};
         
-            for (let key in customLink) {
-                extra[key] = customLink[key].value;
+            for (let key in customInputMap) {
+                extra[key] = customInputMap[key].value;
             }
 
             link.extra = extra;
@@ -434,8 +418,10 @@ document.getElementById("close").onclick = close;
         }, function () {
             switch(this.status) {
             case 409:                
-                alert("오류!\n\n링크 수정 실패.");
+                alert("Error!\n\n링크 수정 실패.");
             case 200:
+                opener.location.reload();
+
                 window.location.reload();
 
                 break;
@@ -459,8 +445,10 @@ document.getElementById("close").onclick = close;
         }, function () {
             switch(this.status) {
             case 409:                
-                alert("오류!\n\n링크 삭제 실패.");
+                alert("Error!\n\n링크 삭제 실패.");
             case 200:
+                opener.location.reload();
+
                 window.location.reload();
 
                 break;
@@ -482,10 +470,84 @@ document.getElementById("close").onclick = close;
     
 	form.onsubmit = function (e) {
 		e.preventDefault();
+
+        const path = {
+                nodeFrom: nodeFrom,
+                nodeTo: nodeTo
+            };
+
+        ["type", "color", "size"].forEach(name => {
+            if (form.elements[name].value) {
+                path[name] = form.elements[name].value;
+            }
+        });
+        
+        top.postRequest({
+            command: "set",
+            target: "path",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo,
+            path: path
+        }, function () {
+            switch(this.status) {
+            case 200:
+                opener.location.reload();
+
+                close();
+
+                break;
+            case 204:
+                console.log("?");
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
 	};
 
+    form.onreset = function (e) {
+        e.preventDefault();
+
+        if (linkData) {
+            alert("Notice!\n\n경로에 링크가 존재합니다.\n링크를 먼저 삭제하십시오.");
+        
+            return;
+        }
+
+        if (!(confirm("Confirm.\n\n경로를 삭제하겠습니까?"))) {
+            return;
+        }
+
+        document.body.classList.add("loading");
+        
+        top.postRequest({
+            command: "remove",
+            target: "path",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo,
+        }, function () {
+            switch(this.status) {
+            case 200:
+                opener.location.reload();
+
+                close();
+
+                break;
+            case 204:
+                console.log("?");
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    }
+
 	// public
-	window.initialize = function(from, to, path) {
+	window.initialize = function(from, to) {
 		opener = this;
         nodeFrom = from;
         nodeTo = to;
@@ -500,12 +562,7 @@ document.getElementById("close").onclick = close;
                 initCustom(JSON.parse(this.responseText).customLink.split(','));
 
             case 204:
-                if (path) {
-                    initLink(path);
-                }
-                else {
-                    document.body.classList.remove("loading");
-                }
+                initPath();
                 
                 break;
             default:
@@ -516,6 +573,39 @@ document.getElementById("close").onclick = close;
         });
     };
     
+    function initPath() {
+        top.postRequest({
+            command: "get",
+            target: "path",
+            nodeFrom: nodeFrom,
+            nodeTo: nodeTo
+        }, function () {
+            switch (this.status) {
+            case 200:
+                const path = JSON.parse(this.responseText);
+
+                ["type", "color", "size"].forEach(name => {
+                    if (name in path) {
+                        form.elements[name].value = path[name];
+                        form.elements["use_"+ name].checked = true;
+                    }
+                });
+                
+                initLink(JSON.parse(this.responseText));
+
+                break;
+            case 204:
+                document.body.classList.remove("loading");
+
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    }
+
     function initLink(path) {
         document.body.classList.add("initialized");
 
@@ -530,8 +620,7 @@ document.getElementById("close").onclick = close;
                 linkData = JSON.parse(this.responseText);
 
                 for (let id in linkData) {
-                    addLink(linkData
-                    [id]);
+                    addLink(linkData[id]);
                 }
             case 204:
                 document.body.classList.remove("loading");
@@ -561,7 +650,7 @@ document.getElementById("close").onclick = close;
             input = document.createElement("input");
             input.type = "text";
             
-            customLink[customs[i]] = input;
+            customInputMap[customs[i]] = input;
             
             li.appendChild(input);
         }
@@ -585,8 +674,8 @@ document.getElementById("close").onclick = close;
 
         if (link) {
             if (link.extra) {
-                for (let key in customLink) {
-                    customLink[key].value = link.extra[key] || "";
+                for (let key in customInputMap) {
+                    customInputMap[key].value = link.extra[key] || "";
                 }
             }
             else {

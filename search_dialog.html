@@ -114,6 +114,14 @@ footer> input:hover {
 	background-color: #c68e17;
 }
 
+.container {
+    position: relative;
+}
+
+.bg_loading {
+    position: absolute;
+}
+
 body:not(.monitor) .monitor {
 	display: none;
 }
@@ -127,32 +135,36 @@ body:not(.monitor) .monitor {
 		<form>
 			<i class="btn_close round" id="close"></i>
 			<h2>네트워크 탐색</h2>
-			<div class="table">
-				<ul>
-					<li>네트워크 주소
-					<li>
-						<input type="text" required name="network" autofocus placeholder="Network address"
-							pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
-				</ul>
-				<ul>
-					<li>서브넷 마스크
-					<li>
-						<div id="mask">255.255.255.192</div>
-						<select name="mask">
-							<option value="255.255.255.0">24
-							<option value="255.255.255.128">25
-							<option value="255.255.255.192" selected>26
-							<option value="255.255.255.224">27
-							<option value="255.255.255.240">28
-							<option value="255.255.255.248">29
-							<option value="255.255.255.252">30
-						</select>
-				</ul>
-			</div>
-			
-			<footer>
-				<input type="submit" value="확인" disabled>
-			</footer>
+            <div class="container">
+                <div class="table">
+                    <ul>
+                        <li>네트워크 주소
+                        <li>
+                            <input type="text" required name="network" autofocus placeholder="Network address"
+                                pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                    </ul>
+                    <ul>
+                        <li>서브넷 마스크
+                        <li>
+                            <div id="mask">255.255.255.192</div>
+                            <select name="mask">
+                                <option value="255.255.255.0">24
+                                <option value="255.255.255.128">25
+                                <option value="255.255.255.192" selected>26
+                                <option value="255.255.255.224">27
+                                <option value="255.255.255.240">28
+                                <option value="255.255.255.248">29
+                                <option value="255.255.255.252">30
+                            </select>
+                    </ul>
+                </div>
+                
+                <footer>
+                    <input type="submit" value="확인" disabled>
+                </footer>
+
+                <div class="bg_loading"></div>
+            </div>
 		</form>
 		
 		<script>
@@ -187,7 +199,9 @@ if (top.account.level === 0) {
 
 	form.onsubmit = function (e) {
 		e.preventDefault();
-	
+    
+        document.body.classList.add("loading");
+        
 		top.postRequest({
 			command: "search",
 			network: form.elements["network"].value,

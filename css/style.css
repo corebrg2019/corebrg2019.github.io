@@ -84,3 +84,60 @@ body:not(.loading) .bg_loading {
     outline: none;
     box-shadow: none;
 }
+
+/* switch button*/
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 2em;
+    height: 1em;
+    font-size: 20px;
+}
+
+.switch >input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch >.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.switch >.slider:before {
+    position: absolute;
+    content: "";
+    height: 0.6em;
+    width: 0.6em;
+    left: 0.2em;
+    bottom: 0.2em;
+    background-color: #fff;
+    transition: .4s;
+}
+
+input:checked +.slider {
+    background-color: #2196F3;
+}
+
+input:focus +.slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(1em);
+}
+
+.switch >.slider.round {
+    border-radius: 0.5em;
+}
+
+.switch >.slider.round:before {
+    border-radius: 50%;
+}

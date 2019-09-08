@@ -17,7 +17,7 @@ body {
 }
 
 form {
-	width: 300px;
+	width: 380px;
 	padding: 20px;
 	background-color: #fff;
 	position: relative;
@@ -43,25 +43,23 @@ input[type="checkbox"] {
 	vertical-align: middle;
 }
 
-.table {
+table {
+    width: 100%;
 	margin: 1em 0;
 }
 
-.table ul {
-	display: flex;
-	list-style: none;
-	padding: 1px;
-	margin: 0;
+th {
+    background-color: #686160;
+    color: #fff;
+    text-align: right;
 }
 
-.table li:first-child {
-	text-align: right;
-	padding: .5em;
-	flex: 2;
+td, th {
+    padding: 3px;
 }
 
-.table li:last-child {
-	flex: 3;
+main {
+    position: relative;
 }
 
 footer{
@@ -111,46 +109,50 @@ body:not(.edit) input[type=reset] {
 		
 		<form autocomplete="off">
 			<i class="btn_close round" id="close"></i>
-			<h2>account</h2>
-			<div class="table">
-				<ul>
-					<li>username
-					<li>
-						<input type="text" name="username" class="text" required autofocus>
-				</ul>
-				<ul>
-					<li>password
-					<li>
-						<input type="password" name="password"
-							class="text"
-							placeholder="new password"
-							pattern=".{6,}"
-							title="at least 6 characters"
-							required>
-						<div>6자 이상</div>
-				</ul>
-				<ul>
-					<li>confirm password
-					<li>
-						<input type="password" name="password2"
-							class="text"
-							placeholder="confirm password"
-							required>
-				</ul>
-				<ul>
-					<li>level
-					<li>
-						<select name="level">
-							<option value="0">root
-							<option value="2" selected>user
-						</select>
-				</ul>
-			</div>
-			<footer>
-				<input type="reset" value="삭제" disabled>
-				<input type="submit" value="확인" disabled>
-			</footer>
-			<div class="bg_loading"></div>
+            <h2>account</h2>
+            <main>
+                <table>
+                    <tr>
+                        <th>username</th>
+                        <td>
+                            <input type="text" name="username" class="text" required autofocus>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>password</th>
+                        <td>
+                            <input type="password" name="password"
+                                class="text"
+                                placeholder="new password"
+                                required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>confirm password</th>
+                        <td>
+                            <input type="password" name="password2"
+                                class="text"
+                                placeholder="confirm password"
+                                required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>level</th>
+                        <td>
+                            <select name="level">
+                                <option value="0">root
+                                <option value="2" selected>user
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <i>※ 더이상 Root 레벨 계정이 존재하지 않는 경우 삭제할 수 없습니다.</i>
+                <footer>
+                    <input type="reset" value="삭제" disabled>
+                    <input type="submit" value="확인" disabled>
+                </footer>
+                <div class="bg_loading"></div>
+            </main>
 		</form>
 
 		<script src="js/md5.js"></script>
@@ -177,15 +179,17 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-    let
+    var
         opener, password;
 
 	form.onreset = function(e) {
 		e.preventDefault();
 
-		if (!confirm("계정을 삭제하겠습니까?")) {
+		if (!confirm("Confirm.\n\n계정을 삭제하겠습니까?")) {
             return;
         }
+
+        document.body.classList.add("loading");
 
         top.postRequest({
             command: "remove",
@@ -194,13 +198,17 @@ if (top.account.level === 0) {
         }, function () {
             switch (this.status) {
             case 200:
-                opener && opener.reload();
-                        
+                opener.location.reload();
+                
                 top.closeDialog();
+
+                document.body.classList.remove("loading");
 
                 break;
             case 409:
-                alert("계정을 삭제할 수 없습니다.\nRoot 레벨 계정이 하나 이상 존재해야 합니다.");
+                alert("Error!\n\n계정 삭제 실패.");
+
+                document.body.classList.remove("loading");
 
                 break;
             default:
@@ -208,8 +216,6 @@ if (top.account.level === 0) {
 
                 console.log(this.responseText && JSON.parse(this.responseText).error);
             }
-
-            document.body.classList.remove("loading");
         });
 	};
 
@@ -221,23 +227,21 @@ if (top.account.level === 0) {
                 target: "account",
                 username: form.elements["username"].value,
                 account: {
+                    username: form.elements["username"].value,
                     level: parseInt(form.elements["level"].value)
                 }
             };
-		
-        if (form.elements["username"].disabled) {
+            console.log(document.body.classList);
+        if (document.body.classList.contains("edit")) {
             // 수정
-            form.elements["password"].required = false;
-            form.elements["password2"].required = false;
-
             if (form.elements["password"].value !== form.elements["password2"].value) {
                 if (form.elements["password"].value) {
-                    alert("비밀번호가 확인 비밀번호와 일치하지 않습니다.");
+                    alert("Error!\n\n비밀번호가 확인 비밀번호와 일치하지 않습니다.");
 
                     form.elements["password2"].select();
                 }
                 else {
-                    alert("비밀번호를 입력하세요.");
+                    alert("Error!\n\n비밀번호를 입력하세요.");
 
                     form.elements["password"].select();
                 }
@@ -256,7 +260,7 @@ if (top.account.level === 0) {
         else {
             // 생성
             if (form.elements["password"].value !== form.elements["password2"].value) {
-                alert("비밀번호가 확인 비밀번호와 일치하지 않습니다.");
+                alert("Error!\n\n비밀번호가 확인 비밀번호와 일치하지 않습니다.");
 
                 form.elements["password2"].select();
                 
@@ -268,12 +272,21 @@ if (top.account.level === 0) {
             request.account.password = hex_md5(form.elements["password"].value);
         }
 		
+        document.body.classList.add("loading");
+
 		top.postRequest(request, function () {
             switch (this.status) {
             case 200:
-                opener && opener.reload();
-                        
-                top.closeDialog();
+                opener.location.reload();
+                
+                document.body.classList.remove("loading");
+
+                break;
+            case 409:
+
+                alert("Error!\n\n계정 "+(request.command == "add"? "추가": "수정")+" 실패");
+
+                document.body.classList.remove("loading");
 
                 break;
             default:
@@ -285,7 +298,7 @@ if (top.account.level === 0) {
 	};
 
 	window.initialize = function (username, account) {
-		opener = this && this.location;
+		opener = this;
 		
 		if (username) {	
 			form.elements["username"].value = username;
@@ -294,6 +307,9 @@ if (top.account.level === 0) {
 			
             password = account.password;
 
+            form.elements["password"].required = false;
+            form.elements["password2"].required = false;
+            
 			document.body.classList.add("edit");
 		}
 		

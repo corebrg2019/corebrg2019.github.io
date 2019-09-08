@@ -12,7 +12,7 @@ ITAhM.iconData = {
     },
     "mainframe": {
         "group": "server",
-        "alt": "mainframe",
+
         "src": "img/svg/mainframe.svg",
         "disabled": "img/svg/disabled/mainframe.svg",
         unit: 1,
@@ -22,7 +22,6 @@ ITAhM.iconData = {
     },
     "database": {
         "group": "server",
-        "alt": "database",
         "src": "img/svg/database.svg",
         "disabled": "img/svg/disabled/database.svg",
         unit: 1,

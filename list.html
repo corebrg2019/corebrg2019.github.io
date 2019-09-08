@@ -306,7 +306,9 @@ function onEdit() {
 }
 
 function onShowStatus() {
-	top.showStatus(window.selectedID);
+	window.sessionStorage.setItem("node_id", window.selectedID);
+
+    window.location.href = "/resource.html";
 }
 
 function initialize() {
@@ -433,6 +435,8 @@ function createRow(id, base) {
 		top.selectMenu("dashboard");
 	};
 	
+    row.title = id;
+    
 	return row;
 }
 

@@ -97,6 +97,14 @@ footer> input:hover {
 	border-color: #0084ff;
 }
 
+.container {
+    position: relative;
+}
+
+.bg_loading {
+    position: absolute;
+}
+
 body:not(.edit) .monitor {
 	display: none;
 }
@@ -180,51 +188,55 @@ function trimLabel(labels) {
 			<i class="btn_close round" id="close"></i>
 			<h2>
 				장비 정보
-			</h2>
-			<div class="table">
-				<ul class="ip">
-					<li>ip 주소
-					<li>
-						<input type="text" name="ip" autofocus>
-				</ul>
-				<ul>
-					<li>이름
-					<li>
-						<input type="text" name="name" placeholder="장비 이름">
-				</ul>
-				<ul>
-					<li>타입
-					<li>
-						<select name="type" required></select>
-					
-				</ul>
-				<ul>
-					<li title="콤마(,)로 구분하며 공백을 허용하지 않습니다."><i>*라벨</i>
-					<li>
-						<input type="text" name="label" placeholder="라벨1 [,라벨2 ...]">
-					
-				</ul>
-				<ul class="monitor">
-					<li>모니터링
-					<li>
-						<select name="monitor" disabled>
-							<option value="none" selected>없음
-							<option value="icmp">ICMP
-							<option value="snmp">SNMP
-						</select>					
-				</ul>
-				
-				<div id="custom"></div>
+            </h2>
+            <div class="container">
+                <div class="table">
+                    <ul class="ip">
+                        <li>ip 주소
+                        <li>
+                            <input type="text" name="ip" autofocus>
+                    </ul>
+                    <ul>
+                        <li>이름
+                        <li>
+                            <input type="text" name="name" placeholder="장비 이름">
+                    </ul>
+                    <ul>
+                        <li>타입
+                        <li>
+                            <select name="type" required></select>
+                        
+                    </ul>
+                    <ul>
+                        <li title="콤마(,)로 구분하며 공백을 허용하지 않습니다."><i>*라벨</i>
+                        <li>
+                            <input type="text" name="label" placeholder="라벨1 [,라벨2 ...]">
+                        
+                    </ul>
+                    <ul class="monitor">
+                        <li>모니터링</li>
+                        <li>
+                            <select name="monitor" disabled>
+                                <option value="none" selected>없음
+                                <option value="snmp">SNMP
+                                <option value="icmp">ICMP
+                                <option value="TCP">TCP
+                            </select>
+                        </li>
+                    </ul>
+                    
+                    <div id="custom"></div>
+                </div>
+                
+                <footer>
+                    <input type="reset" value="삭제" disabled>
+                    <input type="submit" value="저장" disabled>
+                </footer>
+
+                <div class="bg_loading"></div>
 			</div>
-			
-			<footer>
-				<input type="reset" value="삭제" disabled>
-				<input type="submit" value="저장" disabled>
-			</footer>
-			
 		</form>
 		
-		<div class="bg_loading"></div>
 		<script>
 
 var monitor = "none",
@@ -247,10 +259,14 @@ document.addEventListener("keydown", function (e) {
 document.getElementById("close").onclick = close;
 
 (function (form) {
+    const customInputMap = {};
+    var opener, nodeID, protocol;
+
 	if (top.account.level === 0) {
 		document.querySelector("input[type=submit]").disabled = false;
 		document.querySelector("input[type=reset]").disabled = false;
-		form.elements["monitor"].disabled = false;
+		
+        form.elements["monitor"].disabled = false;
 	}
 
 	form.elements["type"].appendChild(buildType());
@@ -259,35 +275,40 @@ document.getElementById("close").onclick = close;
 		e.preventDefault();
 		
 		const
-			ip = this.elements["ip"].value,
             request = {
                 target: "node",
-                node: {
-                    role: "node",
-                    ip: ip,
-                    name: this.elements["name"].value,
-                    type: this.elements["type"].value,
-                    label: trimLabel(this.elements["label"].value)
-                }
+                node: {}
             };
 
-		if (ip && !isIPv4(ip)) {
-			return this.elements["ip"].select();
-		}
-		
-		if (Object.keys(window.custom).length > 0) {
+        if (this.elements["name"].value) {
+            request.node.name = this.elements["name"].value;
+        }
+
+        if (this.elements["ip"].value) {
+            request.node.ip = this.elements["ip"].value;
+        }
+
+        if (this.elements["type"].value) {
+            request.node.type = this.elements["type"].value;
+        }
+
+        if (this.elements["label"].value) {
+            request.node.label = trimLabel(this.elements["label"].value);
+        }
+
+		if (Object.keys(customInputMap).length > 0) {
 			request.node.custom = {};
 
-			for (var name in window.custom) {
-				request.node.custom[name] = window.custom[name].value;
+			for (var name in customInputMap) {
+				request.node.custom[name] = customInputMap[name].value;
 			}
 		}
 
 		document.body.classList.add("loading");
 
-        if (window.id) {
+        if (nodeID) {
             request.command = "set";
-            request.id = window.id;
+            request.id = nodeID;
         }
         else {
             request.command = "add";
@@ -296,13 +317,25 @@ document.getElementById("close").onclick = close;
 		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
-				reloadOpener();
+                opener.location.reload();
+
+                if (request.command == "add") {
+                    nodeID = JSON.parse(this.responseText).id;
+
+                    document.body.classList.add("edit");
+                }
+
+                opener.location.reload();
+                
+                document.body.classList.remove("loading");
 
 				break;
 			case 409:
-				alert("error!\n\n이미 사용중인 IP 주소 입니다.");
+				alert("Error!\n\n이미 사용중인 IP 주소 입니다.");
 
 				form.elements["ip"].select();
+
+                document.body.classList.remove("loading");
 
 				break;
 			default:
@@ -310,8 +343,6 @@ document.getElementById("close").onclick = close;
 
 				console.log(this.responseText && JSON.parse(this.responseText).error);
 			}
-			
-			document.body.classList.remove("loading");
 		});
 	};
 
@@ -327,15 +358,17 @@ document.getElementById("close").onclick = close;
 		top.postRequest({
 			command: "remove",
 			target: "node",
-			id: window.id
+			id: nodeID
 		}, function () {
 			switch (this.status) {
 				case 200:
-					removeOpenerPos();
-					
-					reloadOpener();
+					opener.location.reload();
+
+                    close();
 
 					break;
+                case 409:
+
 				default:
 					alert(top.getMessage(this.status));
 
@@ -345,16 +378,8 @@ document.getElementById("close").onclick = close;
 	};
 
 	form.elements["monitor"].onchange = function (e) {
-		if (!form.elements["ip"].value) {
-			this.value = window.monitor;
-			
-			alert("변경 사항 저장 후 다시 시도 하십시오.");
-
-			return form.elements["ip"].focus();
-		}
-		
-		if (!confirm("모니터 방식을 변경하겠습니까?")) {
-			this.value = window.monitor;
+		if (!confirm("Confirm.\n\n모니터 방식을 변경하겠습니까?")) {
+			this.value = protocol;
 
 			return;
 		}
@@ -362,112 +387,113 @@ document.getElementById("close").onclick = close;
 		document.body.classList.add("loading");
 
         const request = {
+            command: "set",
             target: "monitor",
-            id: window.id
+            id: nodeID,
+            ip: form.elements["ip"].value
         };
 
-        if (this.value === "none") {
-            request.command = "remove";
-        }
-        else {
-            request.command = "set";
+        if (this.value !== "none") {
             request.protocol = this.value;
         }
+
+        this.disabled = true;
 
 		top.postRequest(request, function () {
 			switch (this.status) {
 				case 200:
-					reloadOpener();
+                    alert("Notice.\n\n모니터 요청 정상.");
 
-					break;
+                    document.body.classList.remove("loading");
+					
+                    break;
 				default:
 					alert(top.getMessage(this.status));
 
 					console.log(this.responseText && JSON.parse(this.responseText).error);
 			}
-
-			document.body.classList.remove("loading");
 		});
 	};
 
 	form.elements["monitor"].onclick = function () {
-		window.monitor = this.value;
+		protocol = this.value;
 	};
 
-	//public
-	window.initialize = function (id) {
-		const opener = this;
+    // public
+    window.initialize = function(id) {
+        opener = this;
+        nodeID = id;
 
-		window.removeOpenerPos = function () {
-			opener.removePos(id);
-		};
+        top.postRequest({
+            command: "get",
+            target: "setting",
+            key: "customNode",
+        }, function () {
+            switch(this.status) {
+            case 200:
+                initCustom(JSON.parse(this.responseText).customNode.split(','));
 
-		window.reloadOpener = function () {
-			opener.saveTmpReload();
-			
-			close();
-		};
+            case 204:
+                initNode();
+                
+                break;
+            default:
+                alert(top.getMessage(this.status));
 
-		window.id = id;
-		
-		if ("custom" in top.setting) {
-			const
-				customs = top.setting.custom.split(","),
-				df = document.createDocumentFragment();
-			let
-				ul,
-				input;
-			
-			for (var i=0, _i=customs.length; i<_i; i++) {
-				ul = df.appendChild(document.createElement("ul"));
-				ul.appendChild(document.createElement("li")).textContent = customs[i];
-				
-				input = document.createElement("input");
-				input.type = "text";
-				
-				window.custom[customs[i]] = input;
-				
-				ul.appendChild(document.createElement("li")).appendChild(input);
-			}
-			
-			document.getElementById("custom").appendChild(df);
-		}
-		
-		if (id) {
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    };
+
+    function initNode() {
+		if (nodeID) {
 			top.postRequest({
 				command: "get",
                 target: "node",
-				id: id
+				id: nodeID
 			}, function () {
 				switch (this.status) {
 				case 200:
-					window.base = JSON.parse(this.responseText);
+					window.node = JSON.parse(this.responseText);
 
-					if (!base.type) {
-						base.type = "unknown";
+					if (!node.type) {
+						node.type = "unknown";
 					}
 					
-					form.elements["name"].value = base.name || "";
-					form.elements["ip"].value = base.ip || "";
-					form.elements["type"].value = base.type;
-					// 저장할때는 trim으로 다 붙여서 넣지만 보여줄때는 보기 좋게 한칸씩 띈다.
-					form.elements["label"].value = base.label && (base.label.split(",")).join(", ") || "";
+                    if (node.ip) {
+                        form.elements["monitor"].disabled = false;
+
+                        form.elements["ip"].value = node.ip;
+                    }
+                    
+					form.elements["name"].value = node.name || "";
+					form.elements["type"].value = node.type;
+					// 저장할때는 trim으로 다 붙여서 넣지만 보여줄때는 보기 좋게 한칸씩 뗀다.
+					form.elements["label"].value = node.label && (node.label.split(",")).join(", ") || "";
 			
-					if ("custom" in base) {
-						for (let custom in window.custom) {
-							window.custom[custom].value = base.custom[custom] || "";
+					if ("extra" in node) {
+						for (let name in customInputMap) {
+							customInputMap[name].value = node.extra[name] || "";
 						}
 					}
 
-					if (base.protocol) {
-						form.elements["monitor"].value = base.protocol;
+					if (node.protocol) {
+                        switch(node.protocol) {
+                        case "icmp":
+                        case "tcp":
+                            form.elements["monitor"].value = node.protocol;
+
+                            break;
+                        default:
+                            form.elements["monitor"].value = "snmp"
+                        }
 					}
 					else {
 						form.elements["monitor"].value = "none";
 					}
 						
 					// ip는 한번 지정하면 변경할 수 없다.
-					if (base.ip) {
+					if (node.ip) {
 						form.elements["ip"].disabled = true;
 					}
 
@@ -491,6 +517,26 @@ document.getElementById("close").onclick = close;
 		}
 	};
 
+    function initCustom(customs) {
+        const df = document.createDocumentFragment();
+        var
+            ul,
+            input;
+        
+        customs.forEach(name => {
+            ul = df.appendChild(document.createElement("ul"));
+            ul.appendChild(document.createElement("li")).textContent = name;
+            
+            input = document.createElement("input");
+            input.type = "text";
+            
+            customInputMap[name] = input;
+            
+            ul.appendChild(document.createElement("li")).appendChild(input);    
+        });
+        
+        document.getElementById("custom").appendChild(df);
+    }
 }) (document.querySelector("form"));
 	</script>
 	

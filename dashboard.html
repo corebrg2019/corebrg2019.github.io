@@ -8,12 +8,13 @@
 		
 		<style>
 @import "css/itahm.css";
+@import "css/style.css";
 
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	background: url("img/world.png") no-repeat center center fixed;
 	background-size: cover;
-	display: flex;
+	display: flex; flex-direction: column;
 }
 
 body:not(.background)::before {
@@ -55,6 +56,21 @@ aside> .top {
 	display: flex;
 	justify-content: space-around;
 	align-items: center;
+}
+
+nav {
+    flex: none;
+	padding: 5px;
+    color: #fff;
+    display: flex;
+}
+
+nav >img {
+	vertical-align: bottom;
+}
+
+nav >* {
+    margin: 0 0.5em;
 }
 
 #summary_list {
@@ -116,15 +132,14 @@ header> ul> li:nth-child(3) {
 }
 
 iframe.top {
-	flex: none;
-	width: 320px;
+	position: absolute; top: 0; right: 0; bottom: 0;
+	width: 320px; height: 100%;
 	border: none;
 }
 
 div.nav {
 	flex: none;
 	pointer-events: all;
-	cursor: pointer;
 }
 
 div.nav::after {
@@ -139,6 +154,9 @@ div.nav.hide +#summary_list {
 	display: none;
 }
 
+.pointer {
+    cursor: pointer;
+}
 /* bounce >> */
 .bounce {
 	position: relative;
@@ -267,11 +285,6 @@ div.nav.hide +#summary_list {
 
 /* << bounce */
 
-/* 공통 */
-.fullscreen {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-}
-
 		</style>
 		<script>
 // public
@@ -286,6 +299,17 @@ function moveStage(id) {
 	</head>
 	
 	<body class="loading name">
+        <nav>
+            <img src="/img/setting.png" width="20" height="20" class="pointer" title="맵 편집" id="edit">
+            <label class="switch" title="3D 맵 적용">
+                <input type="checkbox" id="threed">
+                <span class="slider"></span>
+            </label>
+            <select id="display">
+                <option value="name">장비명
+                <option value="address">IP 주소
+            </select>
+        </nav>
 		<article>
 			<aside>
 				<header>
@@ -310,19 +334,20 @@ function moveStage(id) {
 						<div></div>
 					</div>
 				</div>
-				<div class="nav"></div>
+				<div class="nav pointer"></div>
 				<div id="summary_list"></div>	
 			</aside>
-			<iframe id="map"></iframe>
+            <iframe id="map"></iframe>
+            <iframe class="top"></iframe>
 		</article>
-		
-		<iframe class="top"></iframe>
 
 		<script>
 
 var
 	upper = top.store.parent,
-	topList = [];
+    nodeData, posData, pathData,
+	nodeList = [],
+    mapList = [];
 
 (delay => {
 	var timer, id;
@@ -346,23 +371,21 @@ var
 	};
 }) (1000);
 
-if (top.setting.background) {
-	document.body.style.backgroundImage = "url("+ top.setting.background +")";
-
-	document.body.classList.add("background");
-}
-
 document.body.querySelector("div.nav").onclick = function (e) {
 	this.classList.toggle("hide");
 }
 
+document.getElementById("edit").onclick = function () {
+	window.location.href = "/map_edit.html";
+};
+
 function findParentFromStage(parent) {
 	for (let tmp; parent; parent = tmp) {
-		if (!(parent in window.position)) {
+		if (!(parent in window.posData)) {
 			return;
 		}
 
-		tmp = window.position[parent].parent;
+		tmp = window.posData[parent].parent;
 		
 		if (tmp === window.upper) {
 			return parent;
@@ -413,190 +436,273 @@ function findParentFromStage(parent) {
 	};
 })();
 
-function initialize() {
-	const
-		SHUTDOWN = 0,
-		CRITICAL = 1,
-		NORMAL = 2;
-	var
-		sMap = {},
-		cMap = {},
-		sCount = 0,
-		cCount = 0,
-		nCount = 0,
-		base, pos, parent, status;
-		
-	for (let id in window.node) {
-		base = window.node[id];
-		pos = window.position[id];
+((mapFrame, topFrame) => {
+    topFrame.onload = function () {
+        topFrame.contentWindow.display();
+    };
 
-		// 동기화 안된 node의 pos 정보가 없음
-		if (!pos) {
-			window.position[id] = pos = {
-				x: 0,
-				y: 0
-			};
-		}
-		
-		if (pos.parent && !(pos.parent in window.node)) {
-			pos.parent = undefined;
-		}
+	mapFrame.onload = function () {
+        mapFrame.contentWindow.display();
 
-		if (pos.parent === window.upper) {
-			if ("protocol" in base) {
-				if (base.protocol === "snmp") {
-					window.topList.push(id);
-				}
+        window.mapList.forEach(id => {
+            mapFrame.contentWindow.addNode(id);
+        });
 
-				if ("status" in base && !base.status) {
-					status = "shutdown";
-					
-					sCount++;
+        (id => {
+            if (id) {
+                delete top.store.focus;
+            
+                if (id in window.posData) {
+                    const pos = window.posData[id];
 
-					parseLabel(base.label, "shutdown");
-				}
-				else if ("critical" in base && !base.critical) {
-					status = "critical";
-					
-					cCount++;
-					
-					parseLabel(base.label, "critical");
-				}
-				else {
-					status = "normal";
+                    if (pos.parent && !(pos.parent in window.nodeData)) {
+                        pos.parent = undefined;
+                    }
 
-					nCount++;
+                    window.upper = top.store.parent = pos.parent;
+                    
+                    mapFrame.contentWindow.lookAt(pos);
+                }
+                else if (id in window.pathData) {
+                    const
+                        ar = id.split("."),
+                        id1 = "node."+ ar[1],
+                        id2 = "node."+ ar[2];
 
-					parseLabel(base.label, "normal");
-				}
-			}
+                    if (id1 in window.posData && id2 in window.posData) {
+                        const
+                            pos1 = window.posData[id1],
+                            pos2 = window.posData[id2];
+                        
+                        if (pos1.parent === pos2.parent) {
+                            window.upper = top.store.parent = pos1.parent;
 
-			window.map.addNode(id, base, pos, status);
-		}
-		else if (parent = findParentFromStage(pos.parent)) {
-			// 하위
-			if ("protocol" in base) {
-				if (base.protocol === "snmp") {
-					window.topList.push(id);
-				}
+                            mapFrame.contentWindow.lookAt({
+                                x: (pos1.x + pos2.x) / -2,
+                                y: (pos1.y + pos2.y) /-2
+                            });
+                        }
+                    }
+                }
+            }
+        })(top.store.focus);
 
-				if ("status" in base && !base.status) {
-					sMap[parent] = null;
-
-					sCount++;
-					
-					parseLabel(base.label, "shutdown");
-				}
-				else if ("critical" in base && !base.critical) {
-					cMap[parent] = null;
-
-					cCount++;
-					
-					parseLabel(base.label, "critical");
-				}
-				else {
-					nCount++;
-					
-					parseLabel(base.label, "normal");
-				}
-			}
-		}
-	}
-	
-	document.getElementById("alert").textContent = sCount;
-	document.getElementById("critical").textContent = cCount;
-	document.getElementById("normal").textContent = nCount;
-	
-	document.getElementById("summary_list").appendChild(buildLabel());
-
-	for (let id in cMap) {
-		window.map.setNode(id, "critical");
-	}
-
-	for (let id in sMap) {
-		window.map.setNode(id, "shutdown");
-	}
-	
-	for (let id in window.line) {
-		window.map.drawLine(id, window.line[id]);
-	}
-
-	window.map.start();
-
-	//document.querySelector("iframe.top").src ="/top.html";
-
-	document.body.classList.remove("loading");
-}
-
-(map => {
-	map.onload = function () {
-		window.map = this.contentWindow;
-
-		top.postRequest({
-			command: "get",
-			target: ["node", "position"]
-		}, function () {
-			switch (this.status) {
-			case 200:
-				const target = JSON.parse(this.responseText);
-				
-				window.node = target.node;
-				window.line = {};
-				window.position = target.position;
-
-				(id => {
-					if (id) {
-						delete top.store.focus;
-					
-						if (id in window.position) {
-							const pos = window.position[id];
-
-							if (pos.parent && !(pos.parent in window.node)) {
-								pos.parent = undefined;
-							}
-
-							window.upper = top.store.parent = pos.parent;
-							
-							window.map.lookAt(pos);
-						}
-						else if (id in window.line) {
-							const
-								ar = id.split("."),
-								id1 = "node."+ ar[1],
-								id2 = "node."+ ar[2];
-
-							if (id1 in window.position && id2 in window.position) {
-								const
-									pos1 = window.position[id1],
-									pos2 = window.position[id2];
-								
-								if (pos1.parent === pos2.parent) {
-									window.upper = top.store.parent = pos1.parent;
-
-									window.map.lookAt({
-										x: (pos1.x + pos2.x) / -2,
-										y: (pos1.y + pos2.y) /-2
-									});
-								}
-							}
-						}
-					}
-				})(top.store.focus);
-
-				initialize();
-
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-		});
+        mapFrame.contentWindow.start();
 	};
-
-	map.src = top.store.map3d? "map3d.html": "map2d.html";
 	
-}) (document.getElementById("map"));
+    document.getElementById("display").onchange = function () {
+        const display = this;
+        
+        display.disabled = true;
+        mapFrame.contentWindow.display();
+        top.postRequest({
+            command: "set",
+            target: "setting",
+            key: "display",
+            value: display.value
+        }, function () {
+            switch (this.status) {
+            case 200:
+                window.setting.display = display.value;
+
+                mapFrame.contentWindow.display();
+                topFrame.contentWindow.display();
+
+                break;
+            default:
+                alert("Error!\n\n설정을 변경할 수 없습니다.");
+
+                window.location.reload();
+            }
+
+            display.disabled = false;
+        });
+    }
+
+    document.getElementById("threed").onclick = function () {
+        const map = this;
+
+        map.disabled = true;
+
+        window.setting.map = map.checked? "map3d.html": "map2d.html";
+
+        top.postRequest({
+            command: "set",
+            target: "setting",
+            key: "map",
+            value: window.setting.map
+        }, function () {
+            switch (this.status) {
+            case 200:
+                mapFrame.src = window.setting.map;
+            
+                break;
+            default:
+                alert("Error!\n\n설정을 변경할 수 없습니다.");
+
+                window.location.reload();
+            }
+
+            map.disabled = false;
+        });
+    };
+    
+    top.postRequest({
+        command: "get",
+        target: ["node", "path", "position", "setting"]
+    }, function () {
+        switch (this.status) {
+        case 200:
+            const target = JSON.parse(this.responseText);
+            
+            window.nodeData = target.node;
+            window.pathData = target.path;
+            window.posData = target.position;
+            window.setting = target.setting;
+
+            initialize();
+
+            if ("background" in setting) {
+                document.body.style.backgroundImage = "url("+ top.setting.background +")";
+
+                document.body.classList.add("background");
+            }
+
+            if ("display" in setting) {
+                document.getElementById("display").value = setting.display;
+            }
+            else {
+                setting.display = "name";
+            }
+
+            if ("map" in setting && setting.map == "map3d.html") {
+                document.getElementById("threed").checked = true;
+            }
+            else {
+                setting.map = "map2d.html";
+            }
+            
+            topFrame.src ="/top.html";
+            mapFrame.src = setting.map;
+            
+            break;
+        default:
+            alert(top.getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    });
+
+    function initialize() {
+        const
+            SHUTDOWN = 0,
+            CRITICAL = 1,
+            NORMAL = 2;
+        var
+            sMap = {},
+            cMap = {},
+            sCount = 0,
+            cCount = 0,
+            nCount = 0,
+            base, pos, parent, status;
+            
+        for (let id in window.nodeData) {
+            base = window.nodeData[id];
+            pos = window.posData[id];
+
+            // 동기화 안된 node의 pos 정보가 없음
+            if (!pos) {
+                window.posData[id] = pos = {
+                    x: 0,
+                    y: 0
+                };
+            }
+            
+            if (pos.parent && !(pos.parent in window.nodeData)) {
+                pos.parent = undefined;
+            }
+
+            if (pos.parent === window.upper) {
+                if ("protocol" in base) {
+                    window.nodeList.push(id);
+                    window.mapList.push(id);
+
+                    if ("status" in base && !base.status) {
+                        status = "shutdown";
+                        
+                        sCount++;
+
+                        parseLabel(base.label, "shutdown");
+                    }
+                    else if ("critical" in base && !base.critical) {
+                        status = "critical";
+                        
+                        cCount++;
+                        
+                        parseLabel(base.label, "critical");
+                    }
+                    else {
+                        status = "normal";
+
+                        nCount++;
+
+                        parseLabel(base.label, "normal");
+                    }
+                }
+            }
+            else if (parent = findParentFromStage(pos.parent)) {
+                // 하위
+                if ("protocol" in base) {
+                    window.nodeList.push(id);
+
+                    if ("status" in base && !base.status) {
+                        sMap[parent] = null;
+
+                        sCount++;
+                        
+                        parseLabel(base.label, "shutdown");
+                    }
+                    else if ("critical" in base && !base.critical) {
+                        cMap[parent] = null;
+
+                        cCount++;
+                        
+                        parseLabel(base.label, "critical");
+                    }
+                    else {
+                        nCount++;
+                        
+                        parseLabel(base.label, "normal");
+                    }
+                }
+            }
+        }
+
+        document.getElementById("alert").textContent = sCount;
+        document.getElementById("critical").textContent = cCount;
+        document.getElementById("normal").textContent = nCount;
+        
+        document.getElementById("summary_list").appendChild(buildLabel());
+
+        for (let id in cMap) {
+            mapFrame.contentWindow.setNode(id, "critical");
+        }
+
+        for (let id in sMap) {
+            mapFrame.contentWindow.setNode(id, "shutdown");
+        }
+        
+        for (let nodeFrom in window.pathData) {
+            let peers = window.pathData[nodeFrom];
+
+            for (let nodeTo in peers) {
+                mapFrame.contentWindow.drawPath(nodeFrom, nodeTo, peers[nodeTo]);
+            }
+        }
+
+        document.body.classList.remove("loading");
+    }
+}) (document.getElementById("map"), document.querySelector("iframe.top"));
 
 		</script>
 	

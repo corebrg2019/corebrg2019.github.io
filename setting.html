@@ -269,33 +269,10 @@ function createItem(src, key, data, func) {
 			동작
 		</h2>
 		<div id="common" class="box container loading">
-			<p>
-				<form id="health">
-					ICMP Health: <input type="submit" value="적용" class="root">
-					<ul>
-						<li>Timeout(초)
-							<select name="timeout">
-								<option value="1">1
-								<option value="2">2
-								<option value="3">3
-								<option value="5">5
-								<option value="10" selected>10
-							</select>
-						</li>
-						<li>Retry :
-							<select name="retry">
-								<option value="0" selected>0
-								<option value="1">1
-								<option value="2">2
-							</select>
-						</li>
-					</ul>
-				</form>
-			</p>
-			<p>
-				<form id="snmp_interval">
-					SNMP 요청 주기(초) :
-					<select name="snmp_interval">
+            <p>
+				<form id="request_interval">
+					Ping 요청 주기(초) :
+					<select name="request_interval">
 						<option value="3000">3
 						<option value="5000">5
 						<option value="10000" selected>10
@@ -304,6 +281,28 @@ function createItem(src, key, data, func) {
 					</select>
 					<input type="submit" value="적용" class="root">
 				</form>
+			</p>
+            <p>
+				<form id="timeout">
+					Ping Timeout(초): <input type="submit" value="적용" class="root">
+                    <select name="timeout">
+                        <option value="1000">1
+                        <option value="2000">2
+                        <option value="3000">3
+                        <option value="5000">5
+                        <option value="10000" selected>10
+                    </select>
+                </form>
+			</p>
+            <p>
+				<form id="retry">
+					Ping Retry(초): <input type="submit" value="적용" class="root">
+                    <select name="retry">
+                        <option value="0" selected>0
+                        <option value="1">1
+                        <option value="2">2
+                    </select>
+                </form>
 			</p>
 			<p>
 				<form id="store_date">
@@ -317,8 +316,8 @@ function createItem(src, key, data, func) {
 				<form id="save_interval">
 					데이터 저장 단위(분) :
 					<select name="save_interval">
-						<option value="1">1
-						<option value="5">5
+						<option value="60000">1
+						<option value="300000">5
 					</select>
 					<input type="submit" value="적용" class="root">
 				</form>
@@ -337,16 +336,6 @@ function createItem(src, key, data, func) {
 			UI
 		</h2>
 		<div id="setting" class="container box loading">
-			<p>
-				<form id="display">
-					표시 : 
-					<select name="display">
-						<option value="name" selected>장비명
-						<option value="address">IP 주소
-					</select>
-					<input type="submit" value="적용" class="root">
-				</form>
-			</p>
 			<p>
 				<form id="menu">
 					메뉴 고정 : 
@@ -536,7 +525,13 @@ function createItem(src, key, data, func) {
 			<input type="text" name="url" placeholder="company/service.html">
 			<input type="submit" value="이동">
 		</form>
-		
+		<h2>
+            <img width="24px" height="24px" src="/img/warning.png" class="logo">
+            에이전트
+        </h2>
+        <form class="box" id="service">
+            <input type=submit value="서비스 중지">
+        </form>
 		<script src="js/ITAhM.js"></script>
 		<script src="js/object.js"></script>
 		<script src="js/md5.js"></script>
@@ -610,7 +605,7 @@ if (top.account.level > 0) {
 
 (function(container) {
 
-	document.getElementById("health").onsubmit = function (e) {
+	document.getElementById("timeout").onsubmit = function (e) {
 		e.preventDefault();
 		
 		container.classList.add("loading");
@@ -618,12 +613,12 @@ if (top.account.level > 0) {
 		top.postRequest({
             command: "set",
             target: "config",
-			key: "health",
-			value: ((parseInt(this.elements["timeout"].value )& 0x0f) | (parseInt(this.elements["retry"].value) <<4)).toString()
+			key: "timeout",
+			value: this.elements["timeout"].value
 		}, function () {
 			switch(this.status) {
 			case 200:
-				alert("ICMP Helth 확인 방식을 변경 하였습니다.");
+				alert("Ping 응답 제한 시간을 설정 하였습니다.");
 				
 				break;
 			case 400:
@@ -639,8 +634,38 @@ if (top.account.level > 0) {
 			container.classList.remove("loading");
 		});	
 	};
+	
+    document.getElementById("retry").onsubmit = function (e) {
+		e.preventDefault();
 		
-	document.getElementById("snmp_interval").onsubmit = function (e) {
+		container.classList.add("loading");
+		
+		top.postRequest({
+            command: "set",
+            target: "config",
+			key: "retry",
+			value: this.elements["retry"].value
+		}, function () {
+			switch(this.status) {
+			case 200:
+				alert("Ping 재시도 횟수를 설정 하였습니다.");
+				
+				break;
+			case 400:
+				alert("현재 버전에서 지원하지 않는 설정입니다.");
+				
+				break;
+			default:
+				alert(top.getMessage(this.status));
+
+				console.log(this.responseText && JSON.parse(this.responseText).error);
+			}
+			
+			container.classList.remove("loading");
+		});	
+	};
+
+	document.getElementById("request_interval").onsubmit = function (e) {
 		e.preventDefault();
 		
 		container.classList.add("loading");
@@ -648,12 +673,12 @@ if (top.account.level > 0) {
 		top.postRequest({
 			command: "set",
             target: "config",
-			key: "snmpInterval",
-			value: this.elements["snmp_interval"].value
+			key: "requestInterval",
+			value: this.elements["request_interval"].value
 		}, function () {
 			switch(this.status) {
 			case 200:
-				alert("SNMP 요청 주기를 설정 하였습니다.");
+				alert("Ping 요청 주기를 설정 하였습니다.");
 				
 				break;
 			default:
@@ -751,16 +776,13 @@ if (top.account.level > 0) {
 		switch (this.status) {
 			case 200:
 				const config = JSON.parse(this.responseText);
-				
-				document.querySelector("input[name=store_date]").value = "storeDate" in config? config.storeDate: 0;
-				document.querySelector("select[name=save_interval]").value = "saveInterval" in config? config.saveInterval: 1;
+                
+				document.querySelector("input[name=store_date]").value = config.storeDate;
+				document.querySelector("select[name=request_interval]").value = config.requestInterval;
+                document.querySelector("select[name=timeout]").value =  config.timeout;
+                document.querySelector("select[name=retry]").value = config.retry;
+                document.querySelector("select[name=save_interval]").value = "saveInterval" in config? config.saveInterval: 1;
 				document.querySelector("input[name=top]").value = "top" in config? config.top: 10;
-				document.querySelector("select[name=snmp_interval]").value = "snmpInterval" in config? config.snmpInterval: 10000;
-
-				if ("health" in config) {
-					document.querySelector("select[name=timeout]").value =  0x0f & config.health;
-					document.querySelector("select[name=retry]").value = 0x0f & (config.health >> 4);
-				}
 
 				container.classList.remove("loading");
 
@@ -807,12 +829,6 @@ if (top.account.level > 0) {
 			container.classList.remove("loading");
 		});
 	}
-
-	document.getElementById("display").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("display", this.elements["display"].value);
-	};
 
 	document.getElementById("menu").onsubmit = function (e) {
 		e.preventDefault();
@@ -917,10 +933,6 @@ if (top.account.level > 0) {
 		postRequest("linkSize", Math.max(this.elements["size"].value, 0).toString());
 	};
 
-	if("display" in top.setting) {
-		document.querySelector("select[name=display]").value = top.setting.display;
-	}
-
 	if ("menu" in top.setting) {
 		document.querySelector("select[name=menu]").value = top.setting.menu;
 	}
@@ -980,7 +992,6 @@ if (top.account.level > 0) {
 }) (document.getElementById("setting"));
 
 (function (container) {
-	
 	container.onsubmit = function (e) {
 		e.preventDefault();
 
@@ -1040,11 +1051,11 @@ if (top.account.level > 0) {
 		switch (this.status) {
 			case 200:
 				const
-					profile = JSON.parse(this.responseText)
+					profileData = JSON.parse(this.responseText)
 					df = document.createDocumentFragment();
 
-				for (let name in profile) {
-					df.appendChild(createItem("/img/svg/list.svg", name, profile[name], onSelectProfile));
+				for (let name in profileData) {
+					df.appendChild(createItem("/img/svg/list.svg", name, profileData[name], onSelectProfile));
 				}
 
 				document.getElementById("profile_list").appendChild(df);
@@ -1067,6 +1078,38 @@ if (top.account.level > 0) {
 		window.open("/"+ form.elements["url"].value);
 	};
 }) (document.getElementById("support"));
+
+
+(function(form) {
+	form.onsubmit = function (e) {
+		e.preventDefault();
+    
+        if (!confirm("Confirm.\n\n이 명령은 되돌릴 수 없습니다.\n에이전트 서비스 중지를 요청하겠습니까?")) {
+            return;
+        }
+    
+        top.postRequest({
+            command: "stop"
+        }, function () {
+            switch (this.status) {
+            case 200:
+                console.log("Notice.\n\n에이전트 서비스 중지를 요청하였습니다.");
+                
+                break;
+            case 503:
+            console.log("Notice.\n\n에이전트 서비스가 실행되고 있지 않습니다.");
+                
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+
+            document.body.classList.remove("loading");
+        });
+	};
+}) (document.getElementById("service"));
 
 		</script>
 	

@@ -15,7 +15,8 @@ var ITAhM = ITAhM || {};
 			368: "Axis Communications AB",
 			11: "Hewlett-Packard",
 			789: "Network Appliance Corporation",
-			2142: "Future Systems, Inc.",
+            2142: "Future Systems, Inc.",
+            37288: "AXGATE CO., LTD",
 			6296: "DASAN Co.,LTD.",
 			8072: "net-snmp"
 		},

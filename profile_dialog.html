@@ -17,7 +17,7 @@ body {
 }
 
 form {
-	width: 300px;
+	width: 380px;
 	padding: 20px;
 	background-color: #fff;
 	position: relative;
@@ -44,26 +44,24 @@ input[type="checkbox"] {
 	vertical-align: middle;
 }
 
-div.table {
+table {
 	margin: 1em 0;
+    width: 100%;
 }
 
-div.table ul {
-	display: flex;
-	align-items: center;
-	list-style: none;
-	padding: 1px;
-	margin: 0;
+th {
+    background-color: #686160;
+    color: #fff;
+    font-weight: bold;
+    text-align: right;
 }
 
-div.table li:first-child {
+td, th {
+    padding: 3px;
+}
+
+input[type="number"] {
 	text-align: right;
-	padding: .5em;
-	flex: 2;
-}
-
-div.table li:last-child {
-	flex: 3;
 }
 
 form.v3 .version:not(.v3),
@@ -105,6 +103,10 @@ footer> input:hover {
 	background-color: #c68e17;
 }
 
+main {
+    position: relative;
+}
+
 .bg_loading {
 	position: absolute;
 }
@@ -143,61 +145,72 @@ function getByteLength(s) {
 
 		<form autocomplete="off">
 			<i class="btn_close round" id="close"></i>
-			<h2>snmp profile</h2>
-			<div class="table">
-				<ul>
-					<li>profile name 
-					<li>
-						<input type="text" name="name" class="table text"
-							placeholder="snmp profile name" required autofocus>
-					
-				</ul>
-				<ul>
-					<li>udp port 
-					<li>
-						<input type="number" min="1" step="1" value="161" name="udp" class="table text"
-							placeholder="snmp udp port" pattern="\d*" required>
-				</ul>
-				<ul>
-					<li>snmp version 
-					<li>
-						<label><input type="radio" value="v1" name="version">v1</label>
-						<label><input type="radio" value="v2c" name="version" checked>v2c</label>
-						<label><input type="radio" value="v3" name="version">v3</label>
-				</ul>
-				<ul class="version">
-					<li>community 
-					<li>
-						<input type="text" name="community" class="table text"
-							placeholder="snmp community string">
-				</ul>
-				<ul class="version v3">
-					<li>user 
-					<li>
-						<input type="text" name="user" class="table text"
-							placeholder="user name">
-				</ul>
-				<ul class="version v3">
-					<li><div>authentication</div>
-						<label><input type="checkbox" name="en_auth">MD5</label>
-					<li>
-						<input type="password" name="authentication" class="table text"
-							placeholder="user password" disabled>
-				</ul>
-				<ul class="version v3">
-					<li><div>privacy</div>
-						<label><input type="checkbox" name="en_priv">DES</label>
-					<li>
-						<input type="password" name="privacy" class="table text"
-							placeholder="encription password" disabled>
-				</ul>
-			</div>
-			<i>※사용중인 프로파일은 삭제할 수 없습니다.</i>
-			<footer>
-				<input type="reset" value="삭제" disabled>
-				<input type="submit" value="확인" disabled>
-			</footer>
-			<div class="bg_loading"></div>
+            <h2>snmp profile</h2>
+            <main>
+                <table>
+                    <tr>
+                        <th>profile name</th>
+                        <td>
+                            <input type="text" name="name" class="table text"
+                                placeholder="snmp profile name" required autofocus>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>udp port</th>
+                        <td>
+                            <input type="number" min="1" step="1" value="161" name="port" class="table text"
+                                placeholder="snmp udp port" pattern="\d*" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>snmp version</th>
+                        <td>
+                            <label><input type="radio" value="v1" name="version">v1</label>
+                            <label><input type="radio" value="v2c" name="version" checked>v2c</label>
+                            <label><input type="radio" value="v3" name="version">v3</label>
+                        </td>
+                    </tr>
+                    <tr class="version">
+                        <th>community</th> 
+                        <td>
+                            <input type="text" name="community" class="table text"
+                                placeholder="snmp community string">
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th>user</th>
+                        <td>
+                            <input type="text" name="user" class="table text"
+                                placeholder="user name">
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th><div>authentication</div>
+                            <label><input type="checkbox" name="en_auth">MD5</label>
+                        </th>
+                        <td>
+                            <input type="password" name="authentication" class="table text"
+                                placeholder="user password" disabled>
+                        </td>
+                    </tr>
+                    <tr class="version v3">
+                        <th>
+                            <div>privacy</div>
+                            <label><input type="checkbox" name="en_priv">DES</label>
+                        </th>
+                        <td>
+                            <input type="password" name="privacy" class="table text"
+                                placeholder="encription password" disabled>
+                        </td>
+                    </tr>
+                </table>
+                <i>※등록된 Profile은 수정할 수 없고 사용중인 프로파일은 삭제되지 않습니다.</i>
+                <footer>
+                    <input type="reset" value="삭제" disabled>
+                    <input type="submit" value="확인" disabled>
+                </footer>
+                <div class="bg_loading"></div>
+            </main>
 		</form>
 		<script>
 
@@ -222,7 +235,7 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-	let opener;
+	var opener, profileName;
 
 	[].forEach.call(document.querySelectorAll("input[name=version]"), function (version) {
 		version.onchange = function () {
@@ -250,7 +263,7 @@ if (top.account.level === 0) {
 	};
 	
 	form.onreset = function(e) {
-		if (!confirm("이 프로파일을 삭제하겠습니까?")) {
+		if (!confirm("Confirm.\n\n이 프로파일을 삭제하겠습니까?")) {
             return;
         }
         
@@ -259,17 +272,17 @@ if (top.account.level === 0) {
 		top.postRequest({
 			command: "remove",
 			target: "profile",
-			name: name
+			name: profileName
 		}, function () {
 			switch (this.status) {
 			case 200:
-				opener && opener.reload();
+				opener.location.reload();
 				
 				top.closeDialog();
 
 				break;
 			case 409:
-				alert("사용중인 프로파일은 삭제할 수 없습니다.");
+				alert("Error!\n\n프로파일은 삭제 실패.");
 
 				break;
 			default:
@@ -285,14 +298,17 @@ if (top.account.level === 0) {
 	form.onsubmit = function (e) {
 		e.preventDefault();
 		
-		var name = form.elements["name"].value,
+		var
+            name = form.elements["name"].value,
 			version = document.querySelector("input[name=version]:checked").value,
 			request = {
                 target: "profile",
+                command: "add",
                 name: name,
                 profile: {
                     name: name,
-                    udp: form.elements["udp"].value,
+                    protocol: "udp",
+                    port: form.elements["port"].value,
                     version: version
                 }
 			};
@@ -305,7 +321,7 @@ if (top.account.level === 0) {
 				return element.focus();
 			}
 			
-			request.profile["user"] = element.value;
+			request.profile.security = element.value;
 			
 			if (form.elements["en_auth"].checked) {
 				element = form.elements["authentication"];
@@ -320,7 +336,7 @@ if (top.account.level === 0) {
 				}
 				
 				level++; // auth-nopriv
-				request.profile["md5"] = element.value;
+				request.profile.md5 = element.value;
 				
 				if (form.elements["en_priv"].checked) {
 					element = form.elements["privacy"];
@@ -347,28 +363,21 @@ if (top.account.level === 0) {
 				return element.focus();
 			}
 			
-			request.profile.community = form.elements["community"].value;
+			request.profile.security = form.elements["community"].value;
 		}
-        
-        if (document.body.classList.contains("edit")) {
-            request.command = "set";
-        }
-        else {
-            request.command = "add";
-        }
 
 		document.body.classList.add("loading");
 		
 		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
-				opener && opener.reload();
+				opener.location.reload();
 				
 				top.closeDialog();
 
 				break;
 			case 409:
-				alert("사용중인 프로파일은 삭제할 수 없습니다.");
+				alert("Error!\n\n프로파일 추가 실패.");
 
 				break;
 			default:
@@ -382,17 +391,18 @@ if (top.account.level === 0) {
 	};
 
 	window.initialize = function (name, profile) {
-		opener = this && this.location;
-		
+		opener = this;
+        profileName = name;
+
 		if (name) {
 			form.elements["name"].value = name;
 			form.elements["name"].disabled = true;
 			
-			form.elements["udp"].value = profile.udp;
+			form.elements["port"].value = profile.port;
 			document.querySelector("input[name=version][value="+ profile.version +"]").checked = true;
 			
 			if (profile.version === "v3") {
-				form.elements["user"].value = profile.user;
+				form.elements["user"].value = profile.security;
 				
 				if ("md5" in profile) {
 					form.elements["authentication"].value = profile.authentication;
@@ -407,7 +417,7 @@ if (top.account.level === 0) {
 				}
 			}
 			else {
-				form.elements["community"].value = profile.community;
+				form.elements["community"].value = profile.security;
 			}
 			
 			form.className = profile.version;

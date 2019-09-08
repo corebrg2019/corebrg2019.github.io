@@ -8,7 +8,7 @@
 		
 		<style>
 
-@import "css/itahm.css";
+@import "/css/itahm.css";
 
 body {
 	position: fixed; top: 10px; right: 10px; bottom: 10px; left: 10px;
@@ -21,8 +21,10 @@ input[type=date] {
 }
 
 header {
-	position: absolute; top: 0; right: 0;
-	color: #fff; 
+	position: absolute; top: 5px; right: 5px; left: 5px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
 }
 
 .chart {
@@ -34,12 +36,11 @@ iframe {
 	border: none;
 }
 
-nav {
-	float: right;
-}
-
-nav img {
-	cursor: pointer;
+h3 {
+    color: #fff;
+    margin: 0; padding: 1em;
+    background-color: #0084ff;
+    text-shadow: 0 2px 3px #00f;
 }
 
 circle {
@@ -94,7 +95,7 @@ footer .dot::after {
 
 #move {
 	position: absolute;	top: 0; right: 0; bottom: 0; left: 0;
-	background-color: #424242;
+	background-color: #777;
 	cursor: move;
 	border: 2px ridge #ddd;
 	transition: left 0.3s, right 0.3s;
@@ -194,27 +195,92 @@ footer span.label::after {
 	border-color: #0084ff;
 }
 
-.realtime.popup >div {
-	width: 600px; height: 300px;
-	position: relative;
-}
-
-#close {
-	position: absolute; top: 0; right: 0;
-	font-size: 2em;
-	font-weight: bold;
-	cursor: pointer;
-}
-
 #realtime_frame {
 	border: none;
 	width: 100%; height: 100%;
 	background-color: #fff;
 }
 
+/* close-container */
+.close-container {
+    position: relative;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.close-container::before {
+    display: block;
+    content: "";
+    height: 3px;
+    width: 25px;
+    position: absolute;
+    margin-top: 12px;
+    background-color: #F4A259;
+    border-radius: 2px;
+    transform: rotate(45deg);
+    transition: all .3s ease-in;
+}
+
+.close-container::after {
+    display: block;
+    content: "";
+    height: 3px;
+    width: 25px;
+    position: absolute;
+    margin-top: 12px;
+    background-color: #F4A259;
+    border-radius: 2px;
+    transform: rotate(-45deg);
+    transition: all .3s ease-in;
+}
+
+.close-container label{
+    color: #fff;
+    font-size: .4em;
+    transition: all .3s ease-in;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.close-container:hover::before {
+    transform: rotate(-45deg);
+    background-color: #F25C66;
+}
+.close-container:hover::after {
+    transform: rotate(45deg);
+    background-color: #F25C66;
+}
+.close-container:hover label{
+    opacity: 1;
+}
+/* close-container */
+
+nav >span {
+    width: 30px; height: 30px;
+    display: inline-block;
+    border-radius: 50%;
+    line-height: 30px;
+    text-align: center;
+    background-color: #0084ff;
+    border: 1px solid #0084ff;
+    cursor: pointer;
+}
+
+nav >span:hover {
+    background-color: rgba(0, 132, 255, 0.5);
+}
+
+nav img {
+    vertical-align: middle;
+}
+
 .layout,
-body:not(.set) .set,
-body:not(.realtime) .realtime {
+body:not(.set) .set {
 	display: none;
 }
 
@@ -239,16 +305,6 @@ function getDateText(mills) {
 	return MONTH[date.getMonth()] + (dd >9? "": "0") + dd +"일";
 }
 
-// public
-function initialize(id, snmp, resource, index) {
-	window.id = id;
-	window.snmp = snmp;
-	window.resource = resource;
-	window.index = index;
-	
-	initChart();
-}
-
 function initChart() {
 	var date = new Date(window.start);
 	
@@ -271,7 +327,7 @@ function initChart() {
 	
 	resize();
 	
-	window.chart.src = "chart_"+ window.resource +".html";
+	window.chartFrame.src = window.sessionStorage.getItem("chart");
 }
 
 function onSelectStart(e) {
@@ -349,20 +405,6 @@ function resetArea() {
 	window.move.dataset.limit = getDateText(window.dateList[window.rightPos]);
 }
 
-function reload(position, limit) {
-	window.position = window.start = position.setHours(0, 0, 0, 0);
-	window.limit = window.end = limit.setDate(limit.getDate() +1, 0, 0, 0, 0);
-	
-	window.chartWindow.location.reload();
-	
-	clear(window.grid);
-	
-	window.leftPos = window.dayCount -2;
-	window.rightPos = 0;
-	
-	initChart();
-}
-
 function setValueAsDate(e, d) {
 	if ("valueAsDate" in e) {
 		d = new Date(d.getTime());
@@ -409,11 +451,16 @@ function clear(e) {
 		
 		<header>
 			<nav>
-				<img id="set" width="16" height="16" src="img/calendar.png" title="기간 설정">
-				<img id="realtime" width="16" height="16" src="img/realtime.png" title="실시간 그래프">
-				<img id="save" width="16" height="16" src="img/save.png" title="CSV 파일로 저장">
-				<img id="print" width="16" height="16" src="img/printer16.png" title="인쇄">
-			</nav>
+                <span id="set" title="기간 설정">
+                    <img width="16" height="16" src="/img/btn/calendar.png">
+                </span>
+                <span id="save" title="CSV 파일로 저장">
+                    <img width="16" height="16" src="/img/btn/download.png">
+                </span>
+            </nav>
+            <div class="close-container" id="close">
+                <label>CLOSE</label>
+            </div>
 		</header>
 		
 		<footer>
@@ -435,35 +482,28 @@ function clear(e) {
 				<h3>기간설정</h3>
 				<div>
 					<div>
-						<p>start</p>
+						<p>부터</p>
 						<input type="date" id="set_start" value="2017-12-05">
 					</div>
 					<div>
-						<p>end</p>
+						<p style="text-align: right;">까지</p>
 						<input type="date" id="set_end" value="2017-12-12">
 					</div>
 				</div>
 				<div>
-					<input type="reset" value="cancel">
-					<input type="submit" value="apply">
+					<input type="reset" value="취소">
+					<input type="submit" value="적용">
 				</div>
 			</form>
-		</div>
-		
-		<div class="popup realtime">
-			<div>
-				<span id="close" title="실시간 차트 닫기">&#10006;</span>
-				<iframe id="realtime_frame" width="100%" height="100%"></iframe>
-			</div>
 		</div>
 		
 		<div class="layout">
 			<span class="dot"></span>
 		</div>
 		
-		<script src="js/ITAhM.js"></script>
-		<script src="js/Draggable.js"></script>
-		<script src="js/object.js"></script>
+		<script src="/js/ITAhM.js"></script>
+		<script src="/js/Draggable.js"></script>
+		<script src="/js/object.js"></script>
 		<script>
 
 const 
@@ -474,7 +514,6 @@ const
 var resource, index,
 	chartFrame = document.getElementById("chart"),
 	chartWindow = chartFrame.contentWindow,
-	rtFrame = document.getElementById("realtime_frame"),
 	svg = document.querySelector("svg"),
 	base = document.getElementById("base"),
 	dot = document.querySelector(".dot"),
@@ -484,38 +523,25 @@ var resource, index,
 	prev = document.getElementById("prev"),
 	move = document.getElementById("move"),
 	next = document.getElementById("next"),
-	fromDate = document.getElementById("position"),
-	toDate = document.getElementById("limit"),
 	left, right, dayCount, blockWidth, sRect;
 
 (function (date) {
-	date.setHours(0, 0, 0, 0);
-	
-	window.position = date.getTime();
-	window.start = date.setDate(date.getDate() -6);
-	window.end = window.limit = date.setDate(date.getDate() +7);
+    window.sessionStorage.setItem("position", window.position = date.setHours(0, 0, 0, 0));
+    window.sessionStorage.setItem("start", window.start = date.setDate(date.getDate() -6));
+    window.sessionStorage.setItem("end", window.end = date.setDate(date.getDate() +7));
+    window.sessionStorage.setItem("limit", window.limit = window.end);
 })(new Date());
 
 document.onselectstart = function (e) {
 	return false;
 };
 
+document.getElementById("close").onclick = function () {
+    window.location.href = window.sessionStorage.getItem("previous");
+};
+
 document.getElementById("save").onclick = function () {
 	window.chartWindow.getFile();
-};
-
-document.getElementById("print").onclick = function () {
-	window.chartWindow.print();
-};
-
-document.getElementById("realtime").onclick = function () {
-	window.rtFrame.src = "realtime_chart.html";
-	
-	document.body.classList.add("realtime");
-};
-
-document.getElementById("close").onclick = function () {
-	document.body.classList.remove("realtime");
 };
 
 document.getElementById("set").onclick = function (e) {
@@ -533,27 +559,19 @@ window.addEventListener("resize", function () {
 window.selector.addEventListener("dragon", onSelectStart);
 window.selector.addEventListener("drag", onSelect);
 
-window.chartFrame.onload = function () {
-	this.contentWindow.initialize(window);
-};
-
-window.rtFrame.onload = function () {
-	this.contentWindow.initialize(window.id, window.resource, window.index);
-};
-
 new Draggable(window.selector);
 
-(function(window) {
-	var form = document.querySelector("form"),
+(form => {
+	var
 		inputStart = document.getElementById("set_start"),
 		inputEnd = document.getElementById("set_end"),
 		kst = new Date();
 	
-	kst.setDate(kst.getDate() +1);
+	kst.setDate(kst.getDate());
 	
 	setValueAsDate(inputEnd, kst); 
 	
-	kst.setDate(kst.getDate() -7);
+	kst.setDate(kst.getDate() -6);
 	
 	setValueAsDate(inputStart, kst);
 	
@@ -577,9 +595,27 @@ new Draggable(window.selector);
 	});
 	
 	form.addEventListener("reset", function (e) {
+        e.preventDefault();
+
 		document.body.classList.remove("set");
-	});	
-})({});
+    });
+    
+    function reload(start, end) {
+        window.sessionStorage.setItem("start", window.start = start.setHours(0, 0, 0, 0));
+        window.sessionStorage.setItem("position", window.position = end.setHours(0, 0, 0, 0));
+        window.sessionStorage.setItem("end", window.end = end.setDate(end.getDate() +1));
+        window.sessionStorage.setItem("limit", window.limit = window.end);
+        
+        window.chartWindow.location.reload();
+        
+        clear(window.grid);
+        
+        initChart();
+    }
+})(document.querySelector("form"));
+
+initChart();
+
 		</script>
 	
 	</body>

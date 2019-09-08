@@ -46,6 +46,9 @@ div.table li:first-child {
 	width: 100px;
 	padding: .5em;
 	text-align: right;
+    background-color: #686160;
+    color: #fff;
+    font-weight: bold;
 }
 
 div.table li:nth-child(2) {
@@ -120,48 +123,30 @@ body:not(.edit) input[type=reset] {
 	
 		<form class="loading" autocomplete="off">
 				<i class="btn_close round" id="close"></i>
-			<h2>icon</h2>
+			<h2>아이콘</h2>
 			<div class="table">
 				<ul>
 					<li>타입
-					<li><input type="text" name="type" placeholder="아이콘 타입">
+					<li><input type="text" name="type" placeholder="아이콘 타입" required>
 				</ul>
 				<ul>
 					<li>그룹
-					<li><input type="text" name="group" placeholder="아이콘 그룹">
+					<li><input type="text" name="group" placeholder="아이콘 그룹" required>
 				</ul>
 				<ul>
 					<li>활성 이미지
 					<li></li>
-					<li><input type="text" name="url" placeholder="Image URL">
+					<li><input type="text" name="url" placeholder="Image URL" required>
 				</ul>
 				<ul>
 					<li>비활성 이미지
 					<li></li>
-					<li><input type="text" name="disabled" placeholder="Image URL">
-				</ul>
-				<ul>
-					<li>3D Color
-					<li><input type="text" name="color" placeholder="Color Hex Code">
-				</ul>
-				<ul>
-					<li>3D Unit Size
-					<li><input type="number" name="unit" min="1">
-				</ul>
-				<ul>
-					<li>3D Texture
-					<li></li>
-					<li><input type="text" name="texture" placeholder="Image URL">
-				</ul>
-				<ul>
-					<li>3D Top Texture
-					<li></li>
-					<li><input type="text" name="top" placeholder="Image URL">
+					<li><input type="text" name="disabled" placeholder="Image URL" required>
 				</ul>
 			</div>
 			<footer>
                 <input type="reset" value="초기화" disabled>
-				<input type="submit" value="확인" disabled>
+				<input type="submit" value="추가" disabled>
 			</footer>
 			<div class="bg_loading"></div>
 		</form>
@@ -189,22 +174,28 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-	
+    var
+        request = {
+            target: "icon",
+            command: "add"
+        },
+        opener;
+    
 	form.onreset = function (e) {
 		e.preventDefault();
 	
-		if (!confirm("아이콘 설정을 초기화 하겠습니까?")) {
+		if (!confirm("Confirm.\n\n아이콘 설정을 초기화 하겠습니까?")) {
 			return;
 		}
-		
-        top.postRequest({
-			command: "remove",
-			target: "icon",
-			type: form.elements["type"].value
-		}, function () {
+        
+        request.command = "remove";
+        request.type = form.elements["type"].value;
+        top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
-				reload();
+				opener.location.reload();
+                
+                close();
 
 				break;
 			default:
@@ -220,35 +211,26 @@ if (top.account.level === 0) {
 	form.onsubmit = function (e) {
 		e.preventDefault();
 		
-        const request = {
-            target: "icon",
+        request.type = form.elements["type"].value;
+        request.icon = {
             type: form.elements["type"].value,
-            icon: {
-                group: form.elements["group"].value,
-                src: form.elements["url"].value,
-                disabled: form.elements["disabled"].value,
-                texture: form.elements["texture"].value,
-                color: form.elements["color"].value,
-                unit: parseInt(form.elements["unit"].value),
-                top: form.elements["top"].value
-            }
+            group: form.elements["group"].value,
+            src: form.elements["url"].value,
+            disabled: form.elements["disabled"].value
         };
-
-        if (form.elements["type"].disabled) {
-            // 수정
-            request.command = "set";
-        }
-        else {
-            // 생성
-            request.command = "add";
-        }
         
 		top.postRequest(request, function () {
 			switch (this.status) {
 			case 200:
-				reload();
+                opener.location.reload();
+                
+                close();
 
-				break;
+                break;
+            case 409:
+                alert("Error.\n\n명령을 처리하지 못하였습니다.");
+
+                break;
 			default:
 				alert(top.getMessage(this.status));
 
@@ -263,13 +245,54 @@ if (top.account.level === 0) {
 		input.parentNode.previousElementSibling.style.backgroundImage = "url("+url+")";
 	}
 
-	(function (delay) {
-		var active;
+	window.initialize = function (type, icon) {
+		opener = this;
+
+        if (type) {
+            form.elements["type"].disabled = true;
+
+            form.querySelector("input[type=submit]").value = "수정";
+
+            top.postRequest({
+                command: "get",
+                target: "icon",
+                type: type
+            }, function () {console.log(this.status);
+                switch(this.status) {
+                case 200:
+                    request.command = "set";
+
+                    document.body.classList.add("edit");
+                case 204:
+                    initIcon(type, icon);
+
+                    document.body.classList.remove("loading");
+
+                    break;
+                default:
+                    alert(top.getMessage(this.status));
+
+                    console.log(this.responseText && JSON.parse(this.responseText).error);
+                }
+            });
+        }
+	};
+
+    function initIcon(type, icon) {
+        form.elements["type"].value = type;
+        form.elements["group"].value = icon.group;
+        form.elements["url"].value = icon.src;
+        form.elements["disabled"].value = icon.disabled;
+
+        drawImage(form.elements["url"], icon.src);
+        drawImage(form.elements["disabled"], icon.disabled);
+    }
+
+    (function (delay) {
+        var active;
 
 		form.elements["url"].oninput =
-		form.elements["disabled"].oninput =
-		form.elements["texture"].oninput = 
-		form.elements["top"].oninput = function (e) {
+		form.elements["disabled"].oninput = function (e) {
 			const
 				input = this,
 				start = performance.now();
@@ -288,48 +311,8 @@ if (top.account.level === 0) {
 				}
 			});
 		};
-	})(500);
-
-	window.initialize = function (type, icon) {
-		const opener = this;
-
-		window.reload = function () {
-			opener.location.reload();
-			
-			close();
-		};
-
-		if (type) {
-			if ("icon" in top.setting && type in top.setting.icon) {
-				document.body.classList.add("edit");
-			}
-			
-			form.elements["type"].value = type;
-			form.elements["group"].value = icon.group;
-			form.elements["url"].value = icon.src;
-			form.elements["disabled"].value = icon.disabled;
-			form.elements["unit"].value = icon.unit;
-			form.elements["color"].value = icon.color;
-
-			drawImage(form.elements["url"], icon.src);
-			drawImage(form.elements["disabled"], icon.disabled);
-
-			if (icon.texture) {
-				drawImage(form.elements["texture"], icon.texture);
-
-				form.elements["texture"].value = icon.texture;
-			}
-
-			if (icon.top) {
-				drawImage(form.elements["top"], icon.top);
-
-				form.elements["top"].value = icon.top;
-			}
-		}
-		
-		form.elements["type"].select();
-	};
-
+    })(500);
+    
 }) (document.querySelector("form"));
 
 		</script>

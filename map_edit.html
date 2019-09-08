@@ -22,106 +22,49 @@ body, input, button {
 	padding: 0; 
 }
 
-header, nav {
-	position: absolute; top: 5px;
+/* control */
+.control {
+    position: absolute; top: 5px; left: 5px;
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex;
+    align-items: flex-start;
 }
 
-header {
-	left: 5px;
+/* button */
+.button {
+    display: flex;
+    justify-content:center;
+    align-items:center;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    box-sizing: border-box;
 }
 
-nav {
-	right: 5px;
-	padding: 5px;
-	background-color: #ddd;
+.button.enable {
+    border-radius: 50%;
+    background-color: #0084ff;
+    border-color: #0084ff;
 }
 
-nav >img {
-	display: block;
+.button.close {
+    background-color: #f00;
+    border-color: #f00;
+}
+
+.button.enable:hover {
+    background-color: rgba(0, 132, 255, 0.5);
+}
+
+.button.close:hover {
+    background-color: rgba(255, 0, 0, 0.5);
 }
 
 iframe {
     width: 100%; height: 100%;
     border: none;
 }
-
-/* dialog */
-
-body:not(.dialog) .dialog {
-	display: none;
-}
-
-.dialog {
-	margin: 0; padding: 0;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: rgba(0, 0, 0, .8);
-}
-
-.dialog form {
-	padding: 20px;
-	border-radius: 5px 5px 5px 5px;
-	background-color: #fff;
-	position: relative;
-}
-
-.dialog  h2 {
-	margin: 0; padding: 10px;
-	background-color: #0084ff;
-	color: #fff;
-}
-
-.dialog input[type=reset] {
-	display: block;
-	float: right;
-}
-
-.dialog .table {
-	margin: 1em 0;
-}
-
-.dialog ul {
-	display: flex;
-	align-items: center;
-	list-style: none;
-	padding: 0;
-	border-bottom: 3px solid #0084ff;
-}
-
-.dialog li {
-	flex: 1;
-	text-align: center;
-}
-
-.dialog span {
-	background-color: #555;
-	display: inline-block;
-}
-
-.dialog span:hover {
-	background-color: #0084ff;
-}
-
-.dialog input[type=image] {
-	display: block;
-}
-
-#close {
-	font-size: 20px;
-	position: absolute; top: 5px; right: 5px;
-	border: 3px solid transparent;
-}
-
-#close:hover {
-	border-color: #c68e17;
-}
-
-#close::before, #close::after {
-	background-color: #c68e17;
-}
-/**/
 
 body::before {
 	content: "";
@@ -143,50 +86,6 @@ body:not(.root) .root {
 		
 		<script>
 
-function addClass(e, ...args) {
-	var cls = e.getAttribute("class"),
-		classList = cls? cls.split(" "): [];
-	
-	args.forEach(className => {
-		if (classList.indexOf(className) === -1) {
-			classList.push(className);
-		}
-	});
-	
-	e.setAttribute("class", classList.join(" "));
-}
-
-function removeClass(e, className) {
-	var cls = e.getAttribute("class"),
-		classList = cls? cls.split(" "): [],
-		index;
-	
-	for (var i=1; i<arguments.length; i++) {
-		className = arguments[i];
-		
-		index = classList.indexOf(className);
-		
-		if (index !== -1) {
-			classList.splice(index, 1);
-		}
-	}
-	
-	e.setAttribute("class", classList.join(" "));
-}
-
-function hasClass(e, className) {
-	var cls = e.getAttribute("class"),
-		classList = cls? cls.split(" "): [];
-	
-	for (var i=1; i<arguments.length; i++) {
-		if (classList.indexOf(arguments[i]) == -1) {
-			return false;
-		}
-	}
-	
-	return true;
-}
-
 function onEvent(e) {
 	if (e.origin === "search" && !window.loading) {
 		window.loading = true;
@@ -197,57 +96,47 @@ function onEvent(e) {
 	}
 }
 
+/**public**/
+function reload() {
+    document.querySelector("iframe").contentWindow.location.reload();
+}
+
 		</script>
 	</head>
 	
 	<body class="name">
 		<iframe id="editor"></iframe>
-		<header class="root">
-			<img id="add" src="/img/add_device.png" width="32px" height="32px" title="노드 추가">
-			<img id="save" src="/img/save3.png" width="32px" height="32px" title="변경사항 저장">
-		</header>
-		<nav>
-			<img src="/img/zoomo.png" width="16" height="16" title="대시보드로 복귀" id="restore">
-		</nav>
-
-		<div class="dialog">
-			<form rounded autocomplete="off">
-				<i class="btn_close round" id="close" title="닫기"></i>
-				<h2>노드 추가</h2>
-				<ul class="table">
-					<li><span><input type="image" name="search" src="/img/search_btn.png" width="80" height="80" title="네트워크 대역 탐색"></span></li>
-					<li><span><input type="image" name="device" src="/img/node_btn.png" width="80" height="80" title="SNMP/ICMP 노드 추가"></span></li>
-					<li><span><input type="image" name="group" src="/img/group_btn.png" width="80" height="80" title="그룹 노드 추가"></span></li>
-					<li><span><input type="image" name="application" src="/img/app_btn.png" width="80" height="80" title="TCP 응용프로그램 노드 추가"></span></li>
-				</ul>
-			</form>
-		</div>
-
+		<ul class="control root">
+            <li>
+                <span class="button enable close">
+                    <img id="close" src="/img/btn/close.png" width="32px" height="32px" title="대시보드 복귀">
+                </span>
+            </li>
+            <li>
+                <span class="button enable">
+                    <img id="save" src="/img/btn/save.png" width="32px" height="32px" title="변경사항 저장">
+                </span>
+            </li>
+		</ul>
+            
 		<div class="bg_loading"></div>
 
         <script src="/js/ITAhM.js"></script>
         <script src="/js/icon.js"></script>
 		<script>
 var 
-	
-	fragment = document.createDocumentFragment(),
-    iconMap = ITAhM.iconData,
-	svgMap = {},
-    pathMap = {},
-    linkMap = {},
+    positionData,
+    upper,
+    iconData = ITAhM.iconData,
 	scale = 1;
 
 if (top.account.level === 0) {
 	document.body.classList.add("root");
 }
 
-document.getElementById("restore").onclick = function () {
+document.getElementById("close").onclick = function () {
 	window.location.href = "/dashboard.html";
 }
-
-document.getElementById("add").onclick = function () {
-	document.body.classList.add("dialog");
-};
 
 document.getElementById("save").onclick = function () {	
 	document.body.classList.add("loading");
@@ -256,11 +145,11 @@ document.getElementById("save").onclick = function () {
 		command: "set",
         target: "position",
         name: "position",
-		position: window.position
+		position: window.positionData
 	}, function () {
 		switch (this.status) {
 		case 200:
-			alert("구성의 변경사항을 저장하였습니다.");
+			alert("Information.\n\n구성의 변경사항을 저장하였습니다.");
 
 			document.body.classList.remove("loading");
 
@@ -273,78 +162,18 @@ document.getElementById("save").onclick = function () {
 	});
 };
 
-(function (form) {
-
-	document.getElementById("close").onclick = close;
-
-	function close() {
-		document.body.classList.remove("dialog");
-	}
-
-	form.onsubmit = function (e) {
-		e.preventDefault();
-	};
-
-	form.querySelector("input[name=search]").onclick = function () {
-		top.showDialog.call(window, "/search_dialog.html");
-
-		close();
-	};
-
-	form.querySelector("input[name=device]").onclick = function () {
-		top.showDialog.call(window, "/device_dialog.html");
-
-		close();
-	};
-
-	form.querySelector("input[name=group]").onclick = function () {
-		top.showDialog.call(window, "/group_dialog.html");
-		
-		close();
-	};
-
-	form.querySelector("input[name=application]").onclick = function () {
-		top.showDialog.call(window, "/app_dialog.html");
-
-		close();
-	};
-
-}) (document.querySelector("form"));
-
 top.postRequest({
 		command: "get",
-		target: ["node", "path", "link", "icon"]
+		target: "position"
     }, function () {
+    window.positionData = {};
+
 	switch (this.status) {
 	case 200:
-		const target = JSON.parse(this.responseText);
-        var path, link;
+        window.positionData = JSON.parse(this.responseText);
+    case 204:    
+        document.querySelector("iframe").src = "/map_editor.html";
 
-		window.nodeMap = target.node;
-        window.posMap = target.position;
-
-        for (let id in target.path) {
-            path = target.path[id];
-
-            window.pathMap[path.nodeFrom] =
-            window.pathMap[path.nodeTo] = path;
-        }
-
-        for (let id in target.link) {
-            link = target.link[id];
-
-            if (!(link.path in window.linkMap)) {
-                window.linkMap[link.path] = {};
-            }
-
-            window.linkMap[link.path][id] = link;
-        }
-
-        for (let type in target.icon) {
-            window.iconMap[type] = target.icon[type];
-        }
-
-        document.querySelector("iframe").src = "/map_editer.html"
 		break;
 	default:
 		alert(top.getMessage(this.status));

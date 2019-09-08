@@ -35,28 +35,6 @@ body, input, button {
 	width: 100%; height: 100%;
 }
 
-header, nav {
-	position: absolute; top: 5px;
-}
-
-header {
-	left: 5px;
-}
-
-nav {
-	right: 5px;
-	padding: 5px;
-	background-color: #ddd;
-}
-
-nav >img {
-	display: block;
-}
-
-nav >img:not(:nth-of-type(1)) {
-	border-top: 1px solid #777;
-}
-
 /* svg*/
 text::selection {
 	background: none;
@@ -139,101 +117,64 @@ g.upper >circle {
 body.drag g.group:hover >circle {
 	stroke: #0f0;
 }
-
-/* 공통 */
-.fullscreen {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+/* control */
+.control {
+    position: absolute; top: 5px; left: 5px;
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex;
+    align-items: flex-start;
 }
 
-/* dialog */
+/* button */
+.button {
+    display: flex;
+    justify-content:center;
+    align-items:center;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
 
-body:not(.dialog) .dialog {
+.button.enable {
+    border-radius: 50%;
+    background-color: #0084ff;
+    border-color: #0084ff;
+}
+
+.button.enable.active:hover {
+    background-color: rgba(0, 132, 255, 0.5);
+}
+/* popup */
+
+.popup_container {
+    position: relative;
+}
+
+.popup_container:not(:hover) .popup {
 	display: none;
 }
 
-.dialog {
-	margin: 0; padding: 0;
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: rgba(0, 0, 0, .8);
-}
-
-.dialog form {
-	padding: 20px;
-	border-radius: 5px 5px 5px 5px;
-	background-color: #fff;
-	position: relative;
-}
-
-.dialog  h2 {
-	margin: 0; padding: 10px;
-	background-color: #0084ff;
-	color: #fff;
-}
-
-.dialog input[type=reset] {
+.popup input[type=reset] {
 	display: block;
 	float: right;
 }
 
-.dialog .table {
-	margin: 1em 0;
-}
-
-.dialog ul {
-	display: flex;
-	align-items: center;
-	list-style: none;
-	padding: 0;
-	border-bottom: 3px solid #0084ff;
-}
-
-.dialog li {
-	flex: 1;
-	text-align: center;
-}
-
-.dialog span {
+.popup span {
 	background-color: #555;
-	display: inline-block;
-}
-
-.dialog span:hover {
-	background-color: #0084ff;
-}
-
-.dialog input[type=image] {
 	display: block;
 }
 
-#close {
-	font-size: 20px;
-	position: absolute; top: 5px; right: 5px;
-	border: 3px solid transparent;
+.popup span:hover {
+	background-color: #0084ff;
 }
 
-#close:hover {
-	border-color: #c68e17;
+.popup input[type=image] {
+	display: block;
 }
 
-#close::before, #close::after {
-	background-color: #c68e17;
-}
 /**/
-
-body::before {
-	content: "";
-	position: fixed; top: 0; right: 50%; bottom: 0;
-	border-right: 1px dotted #ddd;
-}
-
-body::after {
-	content: "";
-	position: fixed; top: 50%; right: 0; left: 0;
-	border-top: 1px dotted #ddd;
-}
 
 body.name tspan:last-child,
 body:not(.name) tspan:first-child,
@@ -250,20 +191,8 @@ function zoom() {
 }
 
 // public
-// 에디터를 벗어나지 않았다고 판단되어야 할때 현재 상태를 임시 저장
-function saveTmpReload() {
-	top.store.editor = {
-		scale: window.scale,
-		position: window.position,
-		parent: window.upper
-	}
-
-	window.location.reload();
-}
-
-// public
 function removePos(id) {
-	delete window.position[id];
+	delete parent.positionData[id];
 }
 
 function isChecked(svgDevice) {
@@ -279,13 +208,13 @@ function onMoveGroup() {
 
 	[window.checkCanvas, window.selectCanvas].forEach(function (canvas) {
 		[].forEach.call(canvas.querySelectorAll("g.node"), function (node) {
-			window.position[node.id].parent = id;
+			parent.positionData[node.id].parent = id;
 		});
 	});
 
-	window.upper = id;
+	parent.upper = id;
 
-	saveTmpReload();
+    window.location.reload();
 }
 
 function addClass(e, ...args) {
@@ -339,17 +268,17 @@ function onClickDevice(e) {
 		window.isDragging = false;
 	}
 	else if (e.shiftKey) {
-		window.map[this.id].check(true);
+		window.nodeObjectMap[this.id].check(true);
 	}
 	else if (e.ctrlKey) {
-		window.map[this.id].check();
+		window.nodeObjectMap[this.id].check();
 	}
 	else {
 		[].forEach.call(window.checkCanvas.querySelectorAll("g.node"), function (svgDevice) {
-			window.map[svgDevice.id].reset();
+			window.nodeObjectMap[svgDevice.id].reset();
 		});
 
-		window.map[this.id].select();
+		window.nodeObjectMap[this.id].select();
 	}
 }
 
@@ -368,7 +297,7 @@ function Upper(id, base) {
 		svgLabel = document.createElementNS(SVG_NS, "text"),
 		svgAddr = document.createElementNS(SVG_NS, "tspan"),
 		svgName = document.createElementNS(SVG_NS, "tspan"),
-		icon = getIcon(base.type);
+		icon = window.iconData[base.type];
 	
 	this.node = document.createElementNS(SVG_NS, "g");
 	this.pos = {
@@ -385,7 +314,7 @@ function Upper(id, base) {
 	svgBG.setAttribute("cx", 0);
 	svgBG.setAttribute("cy", 0);
 
-	const upper = window.position[id].parent;
+	const upper = parent.positionData[id].parent;
 	// id에 "undefined" 문자열이 들어가지 않도록 처리
 	if (upper) {
 		this.node.id = upper;
@@ -424,18 +353,18 @@ function Node(id, base) {
 		svgLabel = document.createElementNS(SVG_NS, "text"),
 		svgAddr = document.createElementNS(SVG_NS, "tspan"),
 		svgName = document.createElementNS(SVG_NS, "tspan"),
-		icon = getIcon(base.type);
+		icon = window.iconData[base.type || "unknown"];
 	
 	this.node = document.createElementNS(SVG_NS, "g");
-	this.pos = window.position[id];
-	this.lines = [];
+	this.pos = parent.positionData[id];
+	this.paths = [];
 	this.protocol = base.protocol || "";
 
 	if (!this.pos) {
-		window.position[id] = this.pos = {
+		parent.positionData[id] = this.pos = {
 			x: 0,
 			y: 0,
-			parent: window.upper
+			parent: parent.upper
 		};
 	}
 	else {
@@ -498,19 +427,16 @@ Node.prototype = {
 
 		this.node.setAttribute("transform", "translate("+ this.pos.x +","+ this.pos.y +")");
 
-		this.lines.forEach(function (line) {
-			line.move();
+		this.paths.forEach(function (path) {
+			path.move();
 		});
 
 		if (window.selected === this) {
 			moveAnchor(this.pos.x, this.pos.y);	
 		}
 	},
-	line: function (line) {
-		this.lines.push(line);
-	},
-	connect: function (line) {
-		this.lines.push(line);
+	connect: function (path) {
+		this.paths.push(path);
 	},
 	check: function (check) {
 		if (check === undefined) {
@@ -556,174 +482,92 @@ Node.prototype = {
 	}
 };
 
-function Link(link1, link2) {
+function Path(nodeFrom, nodeTo) {
 	this.container = document.createElementNS(SVG_NS, "g");
 	
-	this.line = document.createElementNS(SVG_NS, "line");
+    this.posFrom = parent.positionData[this.nodeFrom = nodeFrom];
+	this.posTo = parent.positionData[this.nodeTo = nodeTo];
 
-	addClass(this.container, "line");
-	
-	this.line.setAttribute("x1", 0);
-	this.line.setAttribute("y1", 0);
+	this.path = document.createElementNS(SVG_NS, "line");
+    this.path.setAttribute("x1", 0);
+	this.path.setAttribute("y1", 0);
 
-	this.container.appendChild(this.line);
+	this.container.appendChild(this.path);
 
-	if (link1) {
-		this.label1 = this.container.appendChild(this.label(link1.index, link1.name));
-	}
-
-	if (link2) {
-		this.label2 = this.container.appendChild(this.label(link2.index, link2.name));
-	}
+    this.move();
 }
 
-Link.prototype = {
+Path.prototype = {
 	color: function (color) {
-		this.line.setAttribute("stroke", color);
+		this.path.setAttribute("stroke", color);
 	},
 	width: function (width) {
-		this.line.setAttribute("stroke-width", width);
-	},
-	move: function (x1, y1, x2, y2) {
-		this.container.setAttribute("transform", "translate("+ x1 +","+ y1 +")");
-
-		this.line.setAttribute("x2", x2);
-		this.line.setAttribute("y2", y2);
-
-		if (this.label1) {
-			this.label1.setAttribute("x", Math.round(x2 /3));
-			this.label1.setAttribute("y", Math.round(y2 /3));
-		}
-		
-		if (this.label2) {
-			this.label2.setAttribute("x", Math.round(x2 *2/3));
-			this.label2.setAttribute("y", Math.round(y2 *2/3));
-		}
-	},
-	label: function (index, name) {
-		const svg = document.createElementNS(SVG_NS, "text");
-				
-		if (name.length > Line.MAX_LABEL_LEN) {
-			name = name.substring(0, Line.MAX_LABEL_LEN) +"...";
-		}
-
-		svg.textContent = name;
-
-		return svg;
-	}
-};
-
-function Line(id1, id2) {
-	this.pos1 = window.position[this.id1 = id1];
-	this.pos2 = window.position[this.id2 = id2];
-}
-
-Line.WIDTH = 2;
-Line.MAX_LABEL_LEN = 16;
-Line.COLOR = "#d4af37";
-Line.DIFF = 6;
-
-Line.prototype = {
-	addLink: function (link1, link2) {
-		const
-			oLink = new Link(link1, link2);
-		
-		oLink.width(Line.WIDTH);
-		oLink.color(Line.COLOR);
-
-		if (!this.linkList) {
-			this.linkList = oLink;
-		}
-		else {
-			if (!Array.isArray(this.linkList)) {
-				this.linkList = [this.linkList];
-			}
-			
-			this.linkList.push(oLink);
-		}
-
-		this.move();
-
-		return oLink;
+		this.path.setAttribute("stroke-width", width);
 	},
 	move: function () {
-		const theta = Math.atan2(this.pos2.y - this.pos1.y, this.pos2.x - this.pos1.x);
+		this.container.setAttribute("transform", "translate("+ this.posFrom.x +","+ this.posFrom.y +")");
 
-		if (Array.isArray(this.linkList)) {
-			const len = this.linkList.length -1;
-
-			this.linkList.forEach((oLink, i) => {
-				oLink.move(
-					this.pos1.x + Math.cos(theta -Math.PI /2) * (len -i *2) *Line.DIFF,
-					this.pos1.y + Math.sin(theta -Math.PI /2) * (len -i *2) *Line.DIFF,
-					this.pos2.x - this.pos1.x, this.pos2.y - this.pos1.y);
-			});
-		}
-		else if (this.linkList){
-			this.linkList.move(this.pos1.x, this.pos1.y, this.pos2.x - this.pos1.x, this.pos2.y - this.pos1.y);
-		}
-	}
+		this.path.setAttribute("x2", this.posTo.x - this.posFrom.x);
+		this.path.setAttribute("y2", this.posTo.y - this.posFrom.y);
+	},
+    to: function (canvas) {
+        canvas.appendChild(this.container);
+    }
 };
 
-function addLink(oLine, link1, link2, option) {
-	const oLink = oLine.addLink(link1, link2);
+Path.WIDTH = 2;
+Path.MAX_LABEL_LEN = 16;
+Path.COLOR = "#d4af37";
+Path.DIFF = 6;
 
-	window.lineCanvas.appendChild(oLink.container);
-
-	if (option) {
-		oLink.color(option.color);
-		oLink.width(option.width);
-	}
-
-	return oLink;
-}
-
-function drawLine(id, line) {
-	const ar = id.split("."),
-		id1 = "node."+ ar[1],
-		id2 = "node."+ ar[2];
-
-	if (!(id1 in window.map) || !(id2 in window.map)) {
+function drawLine(nodeFrom, nodeTo, path) {
+	if (!(nodeFrom in window.nodeObjectMap) || !(nodeTo in window.nodeObjectMap)) {
 		return;
 	}
 
-	var oLine = new Line(id1, id2);
+	const
+        pathObject = new Path(nodeFrom, nodeTo),
+        link = (linkData =>
+            nodeFrom in linkData && nodeTo in linkData[nodeFrom]? linkData[nodeFrom][nodeTo]: undefined
+        ) (window.linkData);
 
-	if (Array.isArray(line[id1])) {
-		line[id1].forEach((link, i) => {
-			addLink(oLine, link, line[id2][i], line.option);
-		});
-	}
-	else {
-		let link = addLink(oLine, line[id1], line[id2], line.option);
-	}
-	
-	window.map[id1].connect(oLine);
-	window.map[id2].connect(oLine);
+    pathObject.color("#ffffff");
+    pathObject.width(1);
+
+    if (link) {
+
+    }
+
+	window.nodeObjectMap[nodeFrom].connect(pathObject);
+	window.nodeObjectMap[nodeTo].connect(pathObject);
+
+    pathObject.to(window.pathCanvas);
 }
 
 function initialize() {
 	const df = document.createDocumentFragment();
 	var node;
 
-	for (let id in window.node) {
-		node = new Node(id, window.node[id]);
+	for (let id in window.nodeData) {
+		node = new Node(id, window.nodeData[id]);
 		
-		if (node.pos.parent && !(node.pos.parent in window.node)) {
-			node.pos.parent = window.upper;
+		if (node.pos.parent && !(node.pos.parent in window.nodeData)) {
+			node.pos.parent = parent.upper;
 		}
 
-		if (node.pos.parent == window.upper) {
+		if (node.pos.parent == parent.upper) {
 			node.layer(df);
 
-			window.map[id] = node;
+			window.nodeObjectMap[id] = node;
 		}
 	}
 	
 	window.deviceCanvas.appendChild(df);
 
-	for (let id in window.line) {
-		drawLine(id, window.line[id]);
+	for (let nodeFrom in window.pathData) {
+        for (let nodeTo in window.pathData[nodeFrom]) {
+            drawLine(nodeFrom, nodeTo, window.pathData[nodeFrom][nodeTo]);
+        }
 	}
 	
 	zoom();
@@ -760,18 +604,16 @@ function onLink(e) {
 }
 
 function onEnterGroup() {	
-	window.upper = this.id || undefined;
+	parent.upper = this.id || undefined;
 
-	saveTmpReload();
+	window.location.reload();
 }
 
 function onEvent(e) {
 	if (e.origin === "search" && !window.loading) {
 		window.loading = true;
 	
-		alert("새로운 노드가 탐지되었습니다.");
-	
-		saveTmpReload();
+		alert("Notice.\n\n새로운 노드가 탐지되었습니다.");
 	}
 }
 
@@ -794,7 +636,7 @@ function onEvent(e) {
 				</g>
 			</defs>
 			<g id="container" transform="translate(0, 0) scale(1, 1) translate(0, 0)">
-				<g id="line"></g>
+				<g id="path"></g>
 				<g id="link">
 					<line x1="0" y1="0" x2="0" y2="0" />
 				</g>
@@ -807,32 +649,36 @@ function onEvent(e) {
 				<rect x="0" y="0" width="1" height="1"></rect>
 			</g>
 		</svg>
-		<header class="root">
-			<img id="add" src="/img/add_device.png" width="32px" height="32px" title="노드 추가">
-			<img id="save" src="/img/save3.png" width="32px" height="32px" title="변경사항 저장">
-		</header>
-		<nav>
-			<img src="/img/zoomo.png" width="16" height="16" title="대시보드로 복귀" id="restore">
-			<img src="/img/plus.png" width="16" height="16" title="맵 확대" id="zoom_in">
-			<img src="/img/minus.png" width="16" height="16" title="맵 축소" id="zoom_out">
-		</nav>
-
-		<div class="dialog">
-			<form rounded autocomplete="off">
-				<i class="btn_close round" id="close" title="닫기"></i>
-				<h2>노드 추가</h2>
-				<ul class="table">
-					<li><span><input type="image" name="search" src="/img/search_btn.png" width="80" height="80" title="네트워크 대역 탐색"></span></li>
-					<li><span><input type="image" name="device" src="/img/node_btn.png" width="80" height="80" title="SNMP/ICMP 노드 추가"></span></li>
-					<li><span><input type="image" name="group" src="/img/group_btn.png" width="80" height="80" title="그룹 노드 추가"></span></li>
-					<li><span><input type="image" name="application" src="/img/app_btn.png" width="80" height="80" title="TCP 응용프로그램 노드 추가"></span></li>
-				</ul>
-			</form>
-		</div>
-
+		<ul class="control root">
+            <li>
+                    <span class="button">
+                    </span>
+                </li>
+            <li>
+                <span class="button">
+                </span>
+            </li>
+            <li>
+                <span class="button enable active">
+                    <img id="refresh" src="/img/btn/refresh.png" width="32px" height="32px" title="새로 고침">
+                </span>
+            </li>
+            <li class="popup_container">
+                <span class="button enable active">
+                    <img id="add" src="/img/btn/add.png" width="32px" height="32px" title="노드 추가">
+                </span>
+                <form rounded autocomplete="off" class="popup">
+                    <span><input type="image" name="search" src="/img/search_btn.png" width="80" height="80" title="네트워크 대역 탐색"></span>
+                    <span><input type="image" name="device" src="/img/node_btn.png" width="80" height="80" title="SNMP/ICMP/TCP 노드 추가"></span>
+                    <span><input type="image" name="group" src="/img/group_btn.png" width="80" height="80" title="그룹 노드 추가"></span>
+                </form>
+            </li>
+		</ul>
+		
 		<div class="bg_loading"></div>
 
-		<script src="/js/ITAhM.js"></script>
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
 		<script src="/js/Draggable.js"></script>
 		<script>
 		
@@ -846,8 +692,8 @@ const
 var 
 	deviceCanvas = document.getElementById("device"),
 	upperCanvas = document.getElementById("up"),
-	lineCanvas = document.getElementById("line"),
-	container = document.getElementById("container")
+	pathCanvas = document.getElementById("path"),
+	container = document.getElementById("container"),
 	linkCanvas = document.getElementById("link"),
 	selectCanvas = document.getElementById("select"),
 	checkCanvas = document.getElementById("check"),
@@ -857,36 +703,31 @@ var
 	parentAnchor = document.querySelector("g.parent.node"),
 	fragment = document.createDocumentFragment(),
 	transform = container.transform.baseVal,
-	request = {
-		command: "get",
-		target: ["node", "path", "link"]
-	},
-	map = {},
+	nodeObjectMap = {},
 	scale = 1,
+    nodeData, pathData, linkData,
+    iconData = ITAhM.iconData,
 	isDragging = false;
 
 if (top.account.level === 0) {
 	document.body.classList.add("root");
 }
 
-if ("editor" in top.store) {
-	window.scale = top.store.editor.scale;
-	window.position = top.store.editor.position;
-	window.upper = top.store.editor.parent;
-
-	delete top.store.editor;
-}
-else {
-	window.request.target.push("position");
-}
-
 if ("link" in top.setting) {
-	Line.COLOR = top.setting.link.color;
-	Line.WIDTH = top.setting.link.size || 0.5;
+	Path.COLOR = top.setting.link.color;
+	Path.WIDTH = top.setting.link.size || 0.5;
 }
 
 document.onselectstart = function () {
 	return false;
+};
+
+document.getElementById("add").onclick = function () {
+	document.body.classList.add("dialog");
+};
+
+document.getElementById("refresh").onclick = function () {
+	window.location.reload();
 };
 
 (function () {
@@ -905,7 +746,7 @@ document.onselectstart = function () {
 		}
 		else {
 			[].forEach.call(window.checkCanvas.querySelectorAll("g.node"), function (svgDevice) {
-				window.map[svgDevice.id].reset();
+				window.nodeObjectMap[svgDevice.id].reset();
 			});
 		}
 	});
@@ -936,7 +777,7 @@ document.onselectstart = function () {
 		else if (isChecked(target)) {
 			[window.selectCanvas, window.checkCanvas].forEach(function (canvas) {
 				for (let checked = canvas.querySelectorAll("g.node"), i=0, _i=checked.length; i<_i; i++) {
-					window.map[checked[i].id].set();
+					window.nodeObjectMap[checked[i].id].set();
 				}
 			});
 
@@ -945,8 +786,8 @@ document.onselectstart = function () {
 		else {
 			action = "";
 
-			for (let id in window.map) {
-				window.map[id].set();
+			for (let id in window.nodeObjectMap) {
+				window.nodeObjectMap[id].set();
 			}
 
 			window.upperCanvas.style.display = "none";
@@ -993,7 +834,7 @@ document.onselectstart = function () {
 			document.body.classList.add("drag");
 			
 			[].forEach.call(window.checkCanvas.querySelectorAll("g.node"), svgNode => {
-				window.map[svgNode.id].move(x, y);
+				window.nodeObjectMap[svgNode.id].move(x, y);
 			});
 		}
 		else {
@@ -1035,7 +876,7 @@ document.onselectstart = function () {
 			
 			if (key === SHIFT) {
 				[].forEach.call(window.deviceCanvas.querySelectorAll("g.node"), function (svgDevice) {
-					const node = window.map[svgDevice.id];
+					const node = window.nodeObjectMap[svgDevice.id];
 
 					if (x1 < node.pos.x && node.pos.x < x2 && y1 < node.pos.y && node.pos.y < y2) {
 						node.check(true);
@@ -1046,7 +887,7 @@ document.onselectstart = function () {
 				const tmp = [];
 				
 				[].forEach.call(window.checkCanvas.querySelectorAll("g.node"), svgDevice => {
-					const node = window.map[svgDevice.id];
+					const node = window.nodeObjectMap[svgDevice.id];
 
 					if (x1 < node.pos.x && node.pos.x < x2 && y1 < node.pos.y && node.pos.y < y2) {
 						tmp.push(node);
@@ -1054,7 +895,7 @@ document.onselectstart = function () {
 				});
 
 				[].forEach.call(window.deviceCanvas.querySelectorAll("g.node"), svgDevice => {
-					const node = window.map[svgDevice.id];
+					const node = window.nodeObjectMap[svgDevice.id];
 
 					if (x1 < node.pos.x && node.pos.x < x2 && y1 < node.pos.y && node.pos.y < y2) {
 						node.check();
@@ -1094,7 +935,7 @@ document.onselectstart = function () {
 
 			[window.checkCanvas, window.selectCanvas].forEach(function (canvas) {
 				[].forEach.call(canvas.querySelectorAll("g.node"), function (node) {
-					window.map[node.id].move(0, 0);
+					window.nodeObjectMap[node.id].move(0, 0);
 				});
 			});
 
@@ -1103,8 +944,8 @@ document.onselectstart = function () {
 		else {
 			const matrix = window.transform.getItem(2).matrix;
 
-			for (let id in window.map) {
-				window.map[id].move(matrix.e, matrix.f);
+			for (let id in window.nodeObjectMap) {
+				window.nodeObjectMap[id].move(matrix.e, matrix.f);
 			}
 
 			window.transform.getItem(2).setTranslate(0, 0);
@@ -1128,40 +969,12 @@ document.onselectstart = function () {
 	resize();
 }) ();
 
-document.getElementById("restore").onclick = function () {
-	window.location.href = "/dashboard.html";
-}
-
 document.getElementById("add").onclick = function () {
 	document.body.classList.add("dialog");
 };
 
-document.getElementById("save").onclick = function () {	
-	document.body.classList.add("loading");
-
-	top.postRequest({
-		command: "set",
-        target: "position",
-        key: "position",
-		value: window.position
-	}, function () {
-		switch (this.status) {
-		case 200:
-			alert("구성의 변경사항을 저장하였습니다.");
-
-			document.body.classList.remove("loading");
-
-			break;
-		default:
-			alert(top.getMessage(this.status));
-
-			console.log(this.responseText && JSON.parse(this.responseText).error);
-		}
-	});
-};
-
 document.getElementById("edit_anchor").onclick = e => {
-	const base = window.node[window.selected.node.id];
+	const base = window.nodeData[window.selected.node.id];
 
 	top.showDialog.call(window,
 		base.role === "group"? "/group_dialog.html":
@@ -1171,26 +984,11 @@ document.getElementById("edit_anchor").onclick = e => {
 	e.stopPropagation();
 };
 
-document.getElementById("zoom_in").onclick = function () {
-	zoom(window.scale *= 1.1);
-}
-
-document.getElementById("zoom_out").onclick = function () {
-	zoom(window.scale /= 1.1);
-}
-
 window.addEventListener("wheel", function (e) {
 	zoom(e.deltaY < 0? scale *= 1.1: scale /= 1.1);
 });
 
 (function (form) {
-
-	document.getElementById("close").onclick = close;
-
-	function close() {
-		document.body.classList.remove("dialog");
-	}
-
 	form.onsubmit = function (e) {
 		e.preventDefault();
 	};
@@ -1213,36 +1011,29 @@ window.addEventListener("wheel", function (e) {
 		close();
 	};
 
-	form.querySelector("input[name=application]").onclick = function () {
-		top.showDialog.call(window, "/app_dialog.html");
-
-		close();
-	};
-
 }) (document.querySelector("form"));
 
-top.postRequest(request, function () {
+top.postRequest({
+		command: "get",
+		target: ["node", "path", "link", "icon"]
+	}, function () {
 	switch (this.status) {
 	case 200:
 		const target = JSON.parse(this.responseText);
 
-		window.node = target.node;
-		window.line = target.line;
-
-		if ("position" in target) {
-			window.position = target.position;
-		}
+		window.nodeData = target.node;
+        window.pathData = target.path;
+        window.linkData = target.link;
 
 		if ("display" in top.setting) {
 			document.body.classList[top.setting.display == "name"? "add": "remove"]("name");
 		}
 		
-		window.getIcon = function (type = "unknown") {
-			return "icon" in top.setting && top.setting.icon[type] || top.store.icon[type];
-		}
-
-		if (window.upper) {
-			new Upper(window.upper, window.node[window.upper]);
+        for (let type in target.icon) {
+            iconData[type] = target.icon[type];
+        }
+		if (parent.upper) {
+			new Upper(parent.upper, window.nodeData[parent.upper]);
 		}
 
 		initialize();

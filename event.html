@@ -8,19 +8,19 @@
 @import "css/style.css";
 
 body {
+    margin: 0; padding: 0;
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+}
+
+main {
+    width: 1024px; height: 100%;
+    margin: 0 auto;
+    display: flex;
+	flex-direction: column;
 }
 
 h1, h2 {
 	color: #fff;
-}
-
-form {
-	width: 1024px; height:100%;
-	padding: 10px;
-	margin: 0 auto;
-	display: flex;
-	flex-direction: column;
 }
 
 header {
@@ -34,8 +34,9 @@ input[type=date] {
 	padding: 0.5em;
 }
 
-.log {
+.container {
 	flex: 1;
+    height: 100%;
 	display: flex;
 	flex-direction: column;
 }
@@ -46,6 +47,7 @@ ul {
 }
 
 .header {
+    flex: none;
 	padding: 0.5em 0;
 	border-bottom: 1px solid #aaa;
 	background-color: #0084ff;
@@ -123,29 +125,27 @@ ul {
 		
 	</head>
 	
-	<body class="loading">
-	
-		<form class="content_width">
-			
-			<header>
-				날짜 선택 :
-				<input type="date" name="date">
-			</header>
-			
-			<div class="log">
-				<div class="header">
-					<ul class="item">
-						<li>상태
-						<li>시간
-						<li>대상
-						<li>이벤트 메세지 (<span id="count"></span>)
-					</ul>
-				</div>
-				<div id="list"></div>
-			</div>
-			
-		</form>
-		
+	<body class="loading">	
+        <main>
+            <header>
+                <form>
+                    날짜 선택 :
+                    <input type="date" name="date">
+                </form>
+            </header>
+            <div class="container">
+                <div class="header">
+                    <ul class="item">
+                        <li>상태
+                        <li>시간
+                        <li>대상
+                        <li>이벤트 메세지 (<span id="count"></span>)
+                    </ul>
+                </div>
+                <div id="list"></div>
+            </div>
+        </main>
+  		
 		<div class="bg_loading"></div>
 		
 		<script>
@@ -176,7 +176,7 @@ ul {
 		
 		top.postRequest({
 			command: "get",
-            target: "log",
+            target: "event",
 			date: mills.toString()
 		}, function () {
 			switch (this.status) {
@@ -215,10 +215,9 @@ ul {
 
 function createItem(event) {
 	var ul = document.createElement("ul"),
-		icon = ul.appendChild(document.createElement("li")).appendChild(document.createElement("img")),
-		status = 0;
+		icon = ul.appendChild(document.createElement("li")).appendChild(document.createElement("img"));
 	
-	ul.appendChild(document.createElement("li")).textContent = toTimeString(event.date);
+	ul.appendChild(document.createElement("li")).textContent = toTimeString(event.timestamp);
 	ul.appendChild(document.createElement("li")).textContent = event.name;
 	
 	switch(event.origin) {
@@ -227,22 +226,15 @@ function createItem(event) {
 		
 	case "critical":
 	case "snmp":
-	case "test":
-		if (!event.status) {
-			status = 1; // orange
-		}
-
+	case "register":
+		
 		break;
 	case "status":
 	case "updown":
-		if (!event.status) {
-			status = 2; // red
-		}
-
+		
 		break;
 	case "warning":
-		status = 1; // orange
-
+		
 		break;	
 	case "system":
 		break;
@@ -253,7 +245,7 @@ function createItem(event) {
 
 	ul.classList.add("item");
 	
-	icon.src = status === 1? "/img/siren.png": status === 2? "/img/warning.png": "/img/normal.png";
+	icon.src = event.level === 1? "/img/siren.png": event.level === 2? "/img/warning.png": "/img/normal.png";
 	
 	return ul;
 }
