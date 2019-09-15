@@ -399,13 +399,6 @@ function addNode(id, pos) {
     
 	if ("protocol" in base) {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
-		
-		if ("status" in base && !base.status) {
-			addClass(svgDevice, "shutdown");
-		}
-		else if ("critical" in base && !base.critical) {
-			addClass(svgDevice, "critical");
-		}
 	}
 	else if (icon.group === "group") {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
@@ -414,11 +407,11 @@ function addNode(id, pos) {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.disabled);
 	}
 }
-/*
+
 function setNode(id, status) {
     addClass(window.nodeSVGMap[id], status);
 }
-*/
+
 function setClick() {
 	window.click = true;
 }

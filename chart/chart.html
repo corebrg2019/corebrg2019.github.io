@@ -249,11 +249,11 @@ footer span.label::after {
 
 .close-container:hover::before {
     transform: rotate(-45deg);
-    background-color: #F25C66;
+    background-color: #0084ff;
 }
 .close-container:hover::after {
     transform: rotate(45deg);
-    background-color: #F25C66;
+    background-color: #0084ff;
 }
 .close-container:hover label{
     opacity: 1;
@@ -288,6 +288,17 @@ body:not(.set) .set {
 	pointer-events: none;
 }
 
+#realtime.realtime {
+    animation: realtime 4s linear infinite;
+}
+
+@keyframes realtime {
+    from {
+        transform: rotate(0);
+    } to {
+        transform: rotate(360deg);
+    }
+}
 		</style>
 		<script>
 		
@@ -454,6 +465,9 @@ function clear(e) {
                 <span id="set" title="기간 설정">
                     <img width="16" height="16" src="/img/btn/calendar.png">
                 </span>
+                <span id="realtime" title="실시간 차트">
+                    <img width="16" height="16" src="/img/btn/realtime.png">
+                </span>
                 <span id="save" title="CSV 파일로 저장">
                     <img width="16" height="16" src="/img/btn/download.png">
                 </span>
@@ -506,10 +520,7 @@ function clear(e) {
 		<script src="/js/object.js"></script>
 		<script>
 
-const 
-	MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-	MONTH = ["01월", "02월", "03월", "04월", "05월", "06월", "07월", "08월", "09월", "10월", "11월", "12월"],
-	MARGINS = 5;
+const MONTH = ["01월", "02월", "03월", "04월", "05월", "06월", "07월", "08월", "09월", "10월", "11월", "12월"];
 
 var resource, index,
 	chartFrame = document.getElementById("chart"),
@@ -534,6 +545,12 @@ var resource, index,
 
 document.onselectstart = function (e) {
 	return false;
+};
+
+document.getElementById("realtime").onclick = function () {
+    if (window.chartWindow) {
+        window.chartWindow.realtime(this.classList.toggle("realtime"));
+    }
 };
 
 document.getElementById("close").onclick = function () {

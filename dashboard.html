@@ -70,7 +70,7 @@ nav >img {
 }
 
 nav >* {
-    margin: 0 0.5em;
+    margin: 0 1px;
 }
 
 #summary_list {
@@ -347,7 +347,9 @@ var
 	upper = top.store.parent,
     nodeData, posData, pathData,
 	nodeList = [],
-    mapList = [];
+    mapList = [],
+    shutdownList = [],
+    criticalList = [];
 
 (delay => {
 	var timer, id;
@@ -444,9 +446,19 @@ function findParentFromStage(parent) {
 	mapFrame.onload = function () {
         mapFrame.contentWindow.display();
 
-        window.mapList.forEach(id => {
-            mapFrame.contentWindow.addNode(id);
-        });
+        window.mapList.forEach(id => mapFrame.contentWindow.addNode(id));
+
+        window.criticalList.forEach(id => mapFrame.contentWindow.setNode(id, "critical"));
+
+        window.shutdownList.forEach(id => mapFrame.contentWindow.setNode(id, "shutdown"));
+        
+        for (let nodeFrom in window.pathData) {
+            let peers = window.pathData[nodeFrom];
+
+            for (let nodeTo in peers) {
+                mapFrame.contentWindow.drawPath(nodeFrom, nodeTo, peers[nodeTo]);
+            }
+        }
 
         (id => {
             if (id) {
@@ -599,8 +611,6 @@ function findParentFromStage(parent) {
             CRITICAL = 1,
             NORMAL = 2;
         var
-            sMap = {},
-            cMap = {},
             sCount = 0,
             cCount = 0,
             nCount = 0,
@@ -630,6 +640,8 @@ function findParentFromStage(parent) {
                     if ("status" in base && !base.status) {
                         status = "shutdown";
                         
+                        window.shutdownList.push(id);
+
                         sCount++;
 
                         parseLabel(base.label, "shutdown");
@@ -637,6 +649,8 @@ function findParentFromStage(parent) {
                     else if ("critical" in base && !base.critical) {
                         status = "critical";
                         
+                        window.criticalList.push(id);
+
                         cCount++;
                         
                         parseLabel(base.label, "critical");
@@ -656,14 +670,14 @@ function findParentFromStage(parent) {
                     window.nodeList.push(id);
 
                     if ("status" in base && !base.status) {
-                        sMap[parent] = null;
+                        window.shutdownList.push(parent);
 
                         sCount++;
                         
                         parseLabel(base.label, "shutdown");
                     }
                     else if ("critical" in base && !base.critical) {
-                        cMap[parent] = null;
+                        window.criticalList.push(parent);
 
                         cCount++;
                         
@@ -683,22 +697,6 @@ function findParentFromStage(parent) {
         document.getElementById("normal").textContent = nCount;
         
         document.getElementById("summary_list").appendChild(buildLabel());
-
-        for (let id in cMap) {
-            mapFrame.contentWindow.setNode(id, "critical");
-        }
-
-        for (let id in sMap) {
-            mapFrame.contentWindow.setNode(id, "shutdown");
-        }
-        
-        for (let nodeFrom in window.pathData) {
-            let peers = window.pathData[nodeFrom];
-
-            for (let nodeTo in peers) {
-                mapFrame.contentWindow.drawPath(nodeFrom, nodeTo, peers[nodeTo]);
-            }
-        }
 
         document.body.classList.remove("loading");
     }

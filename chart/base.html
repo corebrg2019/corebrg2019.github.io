@@ -35,7 +35,7 @@ body {
 #graph >path.line {
     stroke-width: 2px;
 	fill: none;
-    stroke: #0084ff;
+    stroke: #777;
     stroke-opacity: 0.8;
     animation: grow_data 0.5s;
 }
@@ -52,11 +52,28 @@ body {
 	white-space: nowrap;
 }
 
-.balloon.value {
-	font-size: 16px;
+.balloon.date {
+    background-color: #F4A259;
+    top: -1em;
 }
 
-#value_max {
+.balloon.date::after {
+    content: "";
+    position: absolute;
+    border: 0.5em solid transparent;
+    border-top-color: #f4a259;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+}
+
+.balloon.value {
+    background-color: #F4A259;
+	font-size: 12px;
+    border-radius: 6px;
+}
+
+#value_min {
 	transform: translateY(1em);
 }
 
@@ -107,9 +124,8 @@ text {
 }
 
 #hover line {
-	stroke-width: 3px;
-	stroke-dasharray: 3, 3;
-	stroke: #ccc;
+    stroke-width: 1px;
+    stroke: #f4a259;
 }
 
 nav {
@@ -398,8 +414,6 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
         hoverHMax.setAttribute("x2", rect.width);
         hoverHAvg.setAttribute("x2", rect.width);
         hoverHMin.setAttribute("x2", rect.width);
-        
-        hoverDate.style.top = "0";
     })();
 
     // X축
@@ -450,13 +464,13 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
         
         strokeAvg.beginPath();
         
-        for (let i=0, _i=blocks.length, dateArray, mills, date, x, y, yAvg, yMax, yMin; i<_i; i++) {
+        for (let i=0, _i=blocks.length, dateArray, millis, date, x, y, yAvg, yMax, yMin; i<_i; i++) {
             dateArray = blocks[i];
         
-            mills = dateArray[0];
+            millis = dateArray[0];
             
-            x = (mills - start) / tpp;
-            y = chartData.getSummary(mills);
+            x = (millis - start) / tpp;
+            y = chartData.getSummary(millis);
         
             yAvg = (y.avg - summaryData.low) * yRatio;
             yMax = (y.max - summaryData.low) * yRatio;
@@ -467,10 +481,10 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
             strokeAvg.moveTo(x, yAvg);
             
             for (let j=1,_j=dateArray.length; j<_j; j++) {
-                mills = dateArray[j];
+                millis = dateArray[j];
                 
-                x = (mills - start) / tpp;
-                y = chartData.getSummary(mills);
+                x = (millis - start) / tpp;
+                y = chartData.getSummary(millis);
                 
                 strokeAvg.lineTo(x, yAvg);
                 
@@ -483,7 +497,7 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
                 area.add(x, yMax, yMin);
             }
             
-            date = new Date(mills);
+            date = new Date(millis);
         
             x = (date.setHours(date.getHours() +1) - start) / tpp;
             
@@ -501,22 +515,31 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
         
         if (keys) {
             const path = new ITAhM.Path(graph);
-            let mills = keys[0];
+            let
+                millis = keys[0],
+                value = chartData.getData(millis, keys[1]);
             
-            path.set("class", "line");
-            path.beginPath();
-            
-            path.moveTo(Math.round((mills - start) / tpp) ,Math.round((chartData.getData(mills) - summaryData.low) * yRatio));
-            
-            for (var i=0, _i=keys.length, y; i<_i; i++) {			
-                mills = keys[i];
+            if (value) {
+                path.set("class", "line");
+                path.beginPath();
                 
-                path.v(y = Math.round((chartData.getData(mills) - summaryData.low) * yRatio));
-                path.moveTo(Math.round((mills - start) / tpp), y);
+                path.moveTo(Math.round((Number(millis) - start) / tpp) , y = Math.round((value - summaryData.low) * yRatio));
                 
+                for (var i=1, _i=keys.length, y; i<_i; i++) {
+                    millis = keys[i];
+                    
+                    value = chartData.getData(millis, keys[i +1]);
+                    
+                    if (!value) {
+                        continue;
+                    }
+                    
+                    path.moveTo(Math.round((Number(millis) - start) / tpp), y);
+                    path.v(y = Math.round((value - summaryData.low) * yRatio));
+                }
+                
+                path.draw();
             }
-            
-            path.draw();
         }
     }
 
@@ -530,8 +553,8 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
         }
         
         var date = new Date(start + x * tpp),
-            mills = date.setMinutes(0, 0, 0),
-            value = chartData.getSummary(mills);
+            millis = date.setMinutes(0, 0, 0),
+            value = chartData.getSummary(millis);
         
         if (!value) {
             return;
@@ -606,7 +629,7 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
 		    </g>
 		</svg>
 		
-		<span id="hover_date" class="balloon"></span>
+		<span id="hover_date" class="balloon date"></span>
 		<span id="value_max" class="balloon value"></span>
 		<span id="value_min" class="balloon value"></span>
 		<span id="value_avg" class="balloon value"></span>
