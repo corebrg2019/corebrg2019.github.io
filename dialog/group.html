@@ -147,10 +147,10 @@ body:not(.edit) input[type=reset] {
 		</form>
 		
 		<div class="bg_loading"></div>
-		
-		<script>
 
-var group;
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
+		<script>
 
 if (top.account.level === 0) {
 	document.querySelector("input[type=submit]").disabled = false;
@@ -173,33 +173,6 @@ document.addEventListener("keydown", function (e) {
 document.getElementById("close").onclick = close;
 
 (function (form) {
-	(e => {
-		const
-			df = document.createDocumentFragment(),
-			iconData = top.store.icon;
-		
-		if ("icon" in top.setting) {
-			const setting = top.setting.icon;
-
-			for (let type in iconData) {
-				if ((type in setting? setting: iconData)[type].group === "group") {
-					df.appendChild(document.createElement("option")).text = type;
-				};
-			}
-		}
-		else {
-			for (let type in iconData) {
-				if (iconData[type].group === "group") {
-					df.appendChild(document.createElement("option")).text = type;
-				}
-			}
-		}
-
-		e.appendChild(df);
-
-		e.selectedIndex = -1;
-	}) (form.elements["type"]);
-
 	form.onreset = function (e) {
 		if (!confirm("선택한 그룹을 삭제하겠습니까?")) {
 			return;
@@ -214,8 +187,6 @@ document.getElementById("close").onclick = close;
 		}, function () {
 			switch (this.status) {
 				case 200:
-					removeOpenerPos();
-
 					reloadOpener();
 
 					break;
@@ -232,8 +203,7 @@ document.getElementById("close").onclick = close;
 	
 		const request = {
             target: "node",
-            value: {
-			    role: "group",
+            node: {
                 name: form.elements["name"].value,
                 type: form.elements["type"].value
             }
@@ -263,27 +233,12 @@ document.getElementById("close").onclick = close;
 		});		
 	};
 
-	// public
-	window.initialize = function (id) {
-		const opener = this;
-
-		window.removeOpenerPos = function () {
-			opener.removePos(id);
-		};
-
-		window.reloadOpener = function () {
-			opener.saveTmpReload();
-			
-			close();
-		};
-		
-		window.id = id;
-
-		if (id) {
+    function initDialog() {
+        if (window.id) {
 			top.postRequest({
 				command: "get",
                 target: "node",
-				id: id
+				id: window.id
 			}, function () {
 				switch (this.status) {
 				case 200:
@@ -308,6 +263,54 @@ document.getElementById("close").onclick = close;
 		else {
 			document.body.classList.remove("loading");
 		}
+    }
+
+	// public
+	window.initialize = function (id) {
+		const opener = this;
+
+		window.reloadOpener = function () {
+			opener.location.reload();
+			
+			close();
+		};
+		
+		window.id = id;
+
+		top.postRequest({
+            command: "get",
+            target: "icon"
+        }, function () {
+            switch (this.status) {
+            case 200:
+                const
+                    iconData = ITAhM.iconData,
+                    customData = JSON.parse(this.responseText),
+                    df = document.createDocumentFragment();
+
+                for (let type in customData) {
+                    iconData[type] = customData[type];
+                }
+
+                for (let type in iconData) {
+                    if (iconData[type].group === "group") {
+                        df.appendChild(document.createElement("option")).text = type;
+                    }
+                }
+
+                form.elements["type"].appendChild(df);
+                form.elements["type"].selectedIndex = -1;
+
+                initDialog();
+
+                break;
+
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
 	};
 }) (document.querySelector("form"));
 

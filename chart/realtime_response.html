@@ -12,35 +12,19 @@
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	margin: 0; padding: 0;
-    background-color: #000;
     color: #fff;
-    border: 2px inset #ff0;
-}
-
-header {
-    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-    padding: 1em;
-}
-
-header >span {
-    padding: 0.5em;
 }
 
 #grid_x {
-    content: "";
-    position: absolute; top: 60px; right: 0; bottom: 60px; left: 0;
-    border-top: 1px solid rgba(200, 200, 200, 0.5);
-    border-bottom: 1px solid rgba(200, 200, 200, 0.5);
+    position: absolute; top: 10px; right: 0; bottom: 10px; left: 0;
 }
 
 #grid_y {
-    content: "";
-    position: absolute; top: 0; right: 190px; bottom: 0; left: 0;
-    border-right: 1px solid rgba(200, 200, 200, 0.5);
+    position: absolute; top: 0; right: 10px; bottom: 0; left: 0;
 }
 
 .chart {
-    position: absolute; top: 50px; right: 180px; bottom: 50px; left: 0;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
 }
 
 #max {
@@ -59,7 +43,7 @@ header >span {
     position: absolute; right: 0; top: 50%;
     transform: translate(100%, -50%);
     font-weight: bolder;
-    font-size: 2em;
+    font-size: 1.5em;
     text-shadow: 0 2px 3px #f00;
 }
 
@@ -74,16 +58,6 @@ svg {
 
 #pointer {
     transition: all 0.5s;
-}
-
-#save {
-    position: absolute; left: 10px; bottom: 10px;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-#save:hover {
-    text-decoration: underline;
 }
 
 stop:nth-of-type(1) {
@@ -115,7 +89,6 @@ Path.prototype = {
 
         this.beginPath();
 
-        //args[0].insertBefore(this.path, args[0].lastElementChild);
         args[0].appendChild(this.path, args[0].lastElementChild);
 
         this.path.setAttributeNS(null, "stroke", color);
@@ -213,35 +186,8 @@ RealtimeData.prototype = {
         pointer.setAttributeNS(null, "cy", y);
 
         this.last = value;
-    },
-    download: function (toString, file) {
-        const rows = [];
-
-        rows.push("index,timestamp,value");
-
-        this.dateArray.forEach((millis, i) => {
-            rows.push([i, toDateTimeString(millis), toString(this.valueArray[i])].join(","));
-        });
-
-        ITAhM.util.download(new Blob(["\ufeff", rows.join("\n")] ,{
-            type: "text/csv;charset=utf-8;"
-        }), file);
     }
 };
-
-function toDateTimeString(millis) {
-    var
-        date = new Date(millis),
-        year = date.getFullYear(),
-        month = date.getMonth() + 1,
-        day  = date.getDate(),
-        h = date.getHours(),
-        m = date.getMinutes(),
-        s = date.getSeconds();
-    
-    return year +"-"+ (month > 9? "": "0") + month +"-"+ (day > 9? "": "0") + day +" "
-        + (h > 9? "": "0") + h +":"+ (m > 9? "": "0") + m +":"+ (s > 9? "": "0") + s;
-}
 
 function resize() {
     var
@@ -265,9 +211,6 @@ function resize() {
         <div id="grid_x"></div>
         <div id="grid_y"></div>
         <div class="chart">
-            <span id="max"></span>
-            <span id="min"></span>
-            <span id="cur"></span>
             <svg id="chart" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <radialGradient id="pointer_gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="90%">
@@ -282,15 +225,11 @@ function resize() {
                 </g>
             </svg>
         </div>
-        <a id="save" title="CSV 파일로 저장">
-            <img src="/img/download.png" width="12" height="12">
-            Download
-        </a>
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
 		<script>
 
-const PERIOD = 60 *1000;
+const PERIOD = 100 *1000;
 var resetAnimation = false;
 
 function draw(realtimeObj) {
@@ -299,20 +238,14 @@ function draw(realtimeObj) {
     }
 
     resetAnimation = true;
-
+    
     realtimeObj.data.draw(
         realtimeObj.path,
         document.getElementById("pointer"),
         realtimeObj.data.max,
         realtimeObj.data.min,
         window.chartHeight,
-        window.chartTPP);
-
-    document.getElementById("cur").textContent = realtimeObj.toString(realtimeObj.data.last);
-    document.getElementById("max").textContent = realtimeObj.toString(realtimeObj.data.max);
-    document.getElementById("min").textContent = realtimeObj.toString(realtimeObj.data.min);
-
-    document.getElementById("save").onclick = realtimeObj.data.download.bind(realtimeObj.data, realtimeObj.toString, realtimeObj.file);
+        window.chartTPP);    
 }
 
 // resize

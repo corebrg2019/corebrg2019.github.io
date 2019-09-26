@@ -34,7 +34,7 @@ body.auto header::after {
 
 		</style>
 		<script src="js/google.js"></script>
-
+        <script src="/js/thread.js"></script>
 		<script>
 
 // public
@@ -64,7 +64,9 @@ function closeDialog() {
 
 function clearLog() {
 	window.logCount = 0;
-	
+    
+    closeDialog();
+
 	document.body.classList.remove("log");
 }
 
@@ -89,112 +91,52 @@ function getMessage(status) {
 	}
 }
 
-function toDateString(m) {
-	const d = new Date(m),
-		a = [d.getFullYear()];
-	let n = d.getMonth() +1;
-	
-	a[a.length] = "년 ";
-	a[a.length] = n > 9? n: ("0"+ n);
-	a[a.length] = "월 ";
-	
-	n = d.getDate();
-	
-	a[a.length] = n > 9? n: ("0"+ n);
-	a[a.length] = "일";
-	
-	return a.join("");
+function onUpdate(status, millis) {
+	setStatus(millis, status);
 }
 
-function onUpdate() {
-	setStatus(new Date().getTime() - window.updateStart, this.status);
-	
-	setTimeout(update, 10000);
-}
-
-function update() {
-	const xhr = new XMLHttpRequest();
-	
-	xhr.open("POST", window.agent, true);
-	xhr.withCredentials = true;
-	
-	xhr.onloadend = onUpdate;
-	
-	window.updateStart = new Date().getTime();
-
-	xhr.send(JSON.stringify({
-		command: "echo"
-	}));
-}
-
-function onEvent(e) {
-	e.stopPropagation();
-	
+function onEvent(status, event) {	
 	if (window.signout) {
 		return;
 	}
 
-	if (this.status === 200) {
-		const event = JSON.parse(this.responseText);
-		
-		window.listener.eventID = (parseInt(event.eventID) +1).toString();
-		
-		window.logCount++;
-		
-		window.count.textContent = window.logCount > 9? "9+": window.logCount;
+    window.logCount++;
+    
+    window.count.textContent = window.logCount > 9? "9+": window.logCount;
 
-		switch(event.origin) {
-		case "critical":
-		case "status":
-		case "snmp":
-		case "updown":
-			break;
+    switch(event.origin) {
+    case "critical":
+    case "status":
+    case "snmp":
+    case "updown":
+        break;
 
-		case "register":
-		case "search":
-		case "system":
-		case "warning":
-			break;
-		}
+    case "register":
+    case "search":
+    case "system":
+    case "warning":
+        break;
+    }
 
-        if (event.level == 2) {
-            try {
-                window.sound.play();
-            } catch (e) {
-                console.log(e);
-            };
-        }
+    if (event.level == 2) {
+        try {
+            window.sound.play();
+        } catch (e) {
+            console.log(e);
+        };
+    }
 
-		window.log.textContent = event.message;
+    window.log.textContent = event.message;
 
-		try {
-			window.frame.contentWindow.onEvent(event);
-		}
-		catch (e) {}
-		
-		document.body.classList.add("log");
-		
-		listen();
-	}
-	else {
-		setStatus(0, this.status);
-		
-		setTimeout(listen, 3000);
-	}
+    try {
+        window.frame.contentWindow.onEvent(event);
+    }
+    catch (e) {}
+    
+    document.body.classList.add("log");
 }
 
-function listen() {
-	const xhr = new XMLHttpRequest();
-
-	xhr.open("POST", window.agent, true);
-	xhr.withCredentials = true;
-	
-	xhr.onloadend = onEvent;
-	
-	xhr.send(JSON.stringify(window.listener));
-}
-
-function initialize (account) {
+function signIn (account) {
 	document.body.classList.add("authorized");
 	
 	document.getElementById("signout").title = account.username +" 로그아웃";
@@ -207,13 +149,11 @@ function initialize (account) {
 	}, function () {
 		switch (this.status) {
 		case 200:
-			window.setting = JSON.parse(this.responseText);
+			window.settingData = JSON.parse(this.responseText);
 			
-			setMenu(window.setting.menu === "true");
+			setMenu(window.settingData.menu === "true");
 
-			update();
-
-			listen();
+			startThread();
 
 			window.frame.src="/dashboard.html";
 
@@ -226,27 +166,13 @@ function initialize (account) {
 	});
 }
 
-function onClose(e) {
-	for (let ip in window.statusWindow) {
-		window.statusWindow[ip].close();
-	}
-}
 		</script>
 		<script>
-/** signin **/
- 
-// private
-
-function onCancel(e) {
-	e.preventDefault();
-	
-	cancel(); 
-}
 
 function postRequest(request, onResponse, timeout) {
 	const xhr = new XMLHttpRequest();
 	
-	xhr.open("POST", window.agent, true);
+	xhr.open("POST", window.localStorage.getItem("agent"), true);
 	xhr.withCredentials = true;
 	xhr.onloadend = onResponse;
 	
@@ -255,84 +181,6 @@ function postRequest(request, onResponse, timeout) {
 	}
 	
 	xhr.send(JSON.stringify(request));
-}
-
-function onSignIn(e) {
-	e.preventDefault();
-	
-	const form = this;
-	
-	document.body.classList.add("loading");
-	
-	window.username = this.elements["username"].value;
-	
-	postRequest({
-		command: "signin",
-		username: window.username,
-		password: hex_md5(this.elements["password"].value)
-	}, function () {
-		document.body.classList.remove("loading");
-		
-		switch(this.status) {
-		case 200:
-			initialize(JSON.parse(this.responseText));
-			
-			break;
-		case 401:
-			alert("계정이 존재하지 않거나 비밀번호가 일치하지 않습니다.");
-			
-			form.elements["username"].select();
-			
-			break;
-		case 503:
-			alert("아이탐 에이전트 서비스가 준비중입니다.");
-
-			break;
-		default:
-			alert("에이전트가 응답하지 않습니다. 상태: "+ this.status);
-			
-			cancel();
-		}
-	}, 10000);
-}
-
-function trySignIn(username) {
-	document.body.classList.add("loading");
-	
-	postRequest({
-		command: "signin"
-	}, function () {
-		switch(this.status) {
-		case 200:
-			try {
-				initialize(JSON.parse(this.responseText));
-			}
-			catch(e) {
-				alert("Error!\n\n서비스가 비정상 종료 되었습니다.\n"+
-				"모든 브라우저를 닫고 다시 시작하십시오.");
-			}
-			
-			break;
-		
-		case 400:
-			document.body.classList.add("set");
-			
-			break;
-		case 503:
-			alert("아이탐 에이전트 서비스가 준비중입니다.");
-
-			break;
-		default:
-			alert("에이전트가 응답하지 않습니다. 상태: "+ this.status);
-			
-			cancel();
-		}
-		
-		document.body.classList.add("ready");
-		document.body.classList.remove("loading");
-		
-		username.select();
-	}, 10000);
 }
 
 function onSignOut() {
@@ -345,12 +193,6 @@ function onSignOut() {
 			window.location.reload();
 		}, 10000);
 	}
-}
-
-function cancel() {
-	window.localStorage.removeItem("agent");
-
-    window.location.reload();
 }
 
 		</script>
@@ -416,39 +258,13 @@ function cancel() {
 					</ul>
 				</div>
 			</header>
-			<div class="frame">
+			<main>
 				<iframe id="frame" name="main"></iframe>
-			</div>
+            </main>
 		</article>
 		<article class="signin">
-			<div class="signin">
-                <h1>Connect to agent</h1>
-                <h2 id="agent"></h2>
-				<form id="connect" class="set">
-					<p>IP Address</p>
-					<input type="text" name="ip" placeholder="IP address" autofocus required>
-					<p>TCP Port</p>
-					<input type="text" name="tcp" placeholder="TCP port" required>
-					<input type="submit" value="Connect" class="button">
-				</form>	
-				<form id="signin" class="account">
-					<p>Username</p>
-					<input type="text" name="username" value="root" required>
-					<p>Password</p>
-					<input type="password" name="password" value="root" required>
-					<div class="flex">
-						<input type="reset" value="Cancel" class="button">
-						<input type="submit" value="Sign in" class="button">
-					</div>
-				</form>
-				<h1>
-					<a href="/">
-						<img width="64" height="64" src="/img/logo.png">
-					</a>
-				</h1>
-			</div>
-		</article>
-		
+            <iframe src="/connect.html"></iframe>
+        </article>
 		<div class="log">
 			<a href="/event.html" target="main">
 				<span id="count">99</span>
@@ -462,30 +278,20 @@ function cancel() {
 		
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
-		<script src="/js/icon.js"></script>
-		<script src="/js/md5.js"></script>
+        <script src="/js/icon.js"></script>
+        
 		<script>
 
 var agent,
 	frame = document.getElementById("frame"),
-	listener = {
-		command: "listen"
-	},
-	store = {
-        icon: ITAhM.iconData,
-        map3d: false
-	},
 	count = document.getElementById("count"),
 	dialog = document.getElementById("dialog"),
 	log = document.getElementById("log"),
-	statusWindow = {},
 	sound = new Audio("siren.mp3"),
 	signout = false,
 	logCount = 0;
 
 document.getElementById("signout").addEventListener("click", onSignOut);
-
-window.addEventListener("unload", onClose);
 
 document.querySelector("div.log").onclick = function () {
 	selectMenu("event");
@@ -521,77 +327,6 @@ document.querySelector("div.log").onclick = function () {
 	};
 
 }) (document.getElementById("status"));
-
-(function (agent) {
-	const connect = document.getElementById("connect"),
-		signin = document.getElementById("signin");
-	
-	signin.addEventListener("reset", onCancel);
-	signin.addEventListener("submit", onSignIn);
-	
-	connect.onsubmit = function (e) {
-		e.preventDefault();
-		
-		const ip = this.elements["ip"],
-			tcp = this.elements["tcp"];
-		
-		if (isNaN(tcp.value) || tcp.value < 0 || tcp.value > 65535) {
-			return tcp.select();
-		}
-		
-		const agent = ip.value +":" +tcp.value;
-		
-		window.agent = "http://"+ agent;
-		
-		document.body.classList.add("loading");
-		
-		postRequest({
-			command: "signin"
-		}, function () {
-			switch(this.status) {
-			case 200:
-			case 400:
-				window.localStorage.setItem("agent", agent);
-
-                window.location.reload();
-				break;
-			case 503:
-				alert("아이탐 에이전트 서비스가 준비중입니다.");
-
-				break;
-			default:
-				alert("에이전트가 응답하지 않습니다. 상태: "+ this.status);
-			
-				ip.select();
-			}
-			
-			document.body.classList.remove("loading");
-		}, 10000);
-	};
-	
-	if (agent) {
-		const args = agent.split(":");
-		
-		if (args.length === 2) {
-			connect.elements["ip"].value = args[0];
-			
-			if (!isNaN(args[1]) && args[1] > -1 && args[1] < 65536) {
-				connect.elements["tcp"].value = args[1];
-				
-				window.agent = "http://" + agent;
-				
-                document.getElementById("agent").textContent = agent;
-
-				return trySignIn(signin.elements["username"]);
-			}
-		}
-		
-		cancel();
-	}
-	else {
-		document.body.classList.add("ready");
-	}
-})(window.localStorage.getItem("agent"));
 
 (function (list) {
 	function remove(a) {

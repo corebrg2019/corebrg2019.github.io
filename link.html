@@ -285,21 +285,15 @@ function initList() {
 	const df = document.createDocumentFragment();
 	var paths, links, row;
 
-    for (let nodeFrom in window.linkData) {
-        paths = window.linkData[nodeFrom];
+    for (let id in window.linkData) {
+        link = window.linkData[id];
 
-        for (let nodeTo in paths) {
-            links = paths[nodeTo];
+        row = createRow(id, link.nodeFrom, link.nodeTo, link.indexFrom, link.indexTo, link.extra);
 
-            for (let id in links) {
-                row = createRow(nodeFrom, nodeTo, id, links[id]);
-
-                if (row) {
-                    df.appendChild(row);
-                }
-            }
+        if (row) {
+            df.appendChild(row);
         }
-	}
+    }
 
 	window.list.appendChild(df);
 	
@@ -308,36 +302,37 @@ function initList() {
 	document.getElementById("count").textContent = count();
 }
 
-function createRow(nodeFrom, nodeTo, id, link) {
-	const 
-		node1 = window.nodeData[nodeFrom],
-		node2 = window.nodeData[nodeTo],
-		row = document.createElement("ul");
-	
-	if (!node1 || !node2) {
-		return;
-	}
+function createRow(id, nodeFrom, nodeTo, indexFrom, indexTo, extra) {
+	const row = document.createElement("ul");
+    
+    row.appendChild(document.createElement("li")); // N.1
 
-	row.appendChild(document.createElement("li")); // N.1
-	
-	row.appendChild(document.createElement("li")).textContent = node1.ip || ""; // N.2
-	row.appendChild(document.createElement("li")).textContent = node1.name || ""; // N.3
-	row.appendChild(document.createElement("li")).textContent = link.indexFrom || ""; // N.4
-	row.appendChild(document.createElement("li")).textContent = node2.ip || ""; // N.5
-	row.appendChild(document.createElement("li")).textContent = node2.name || ""; // N.6
-	row.appendChild(document.createElement("li")).textContent = link.indexTo || "";// N.7
-	
+    (node => {
+        row.appendChild(document.createElement("li")).textContent = node.ip || ""; // N.2
+        row.appendChild(document.createElement("li")).textContent = node.name || ""; // N.3
+        
+        try {
+            row.appendChild(document.createElement("li")).textContent =
+                node.resource[String(indexFrom)]["1.3.6.1.2.1.2.2.1.2"] ||
+                node.resource[String(indexFrom)]["1.3.6.1.2.1.31.1.1.1.1"] // N.4
+        } catch (e) {console.error(e)}
+    })(window.nodeData[nodeFrom]);
+
+    (node => {
+        row.appendChild(document.createElement("li")).textContent = node.ip || ""; // N.5
+        row.appendChild(document.createElement("li")).textContent = node.name || ""; // N.6    
+        
+        try {
+            row.appendChild(document.createElement("li")).textContent =
+                node.resource[String(indexTo)]["1.3.6.1.2.1.2.2.1.2"] ||
+                node.resource[String(indexTo)]["1.3.6.1.2.1.31.1.1.1.1"] // N.7
+        } catch (e) {}
+    })(window.nodeData[nodeTo]);
+
 	if (window.customData) {
-		if (link.extra) {
-			window.customData.forEach(function (custom) {
-				row.appendChild(document.createElement("li")).textContent = link.extra[custom] || "";
-			});
-		}
-		else {
-			window.customData.forEach(function (custom) {
-				row.appendChild(document.createElement("li"));
-			});
-		}
+        window.customData.forEach(custom => {
+            row.appendChild(document.createElement("li")).textContent = link.extra && link.extra[custom] || "";
+        });
 	};
 	
 	row.id = id;
@@ -432,7 +427,7 @@ function sortIP(e) {
 				</nav>
 				<form>
 					<input type="text" name="keyword" placeholder="Keyword">
-					<button class="submit"><img src="/img/btn/search.png">찾기</button>
+					<button class="submit"><img src="/img/btn/search_label.png">찾기</button>
 					<button class="reset"><img src="/img/btn/cancel.png">초기화</button>
 				</form>
 			</aside>
@@ -553,7 +548,7 @@ function initialize() {
 
             window.linkData = target.link;
             window.nodeData = target.node;
-
+            
             initList();
 
             break;

@@ -20,6 +20,12 @@ svg {
 	animation-timing-function:  cubic-bezier(.9, .1, .9, .1);
 }
 
+polyline {
+    fill: none;
+    stroke-dasharray: 5px;
+    animation: flow 0.5s infinite linear;
+}
+
 text::selection {
 	background: none;
 }
@@ -58,10 +64,11 @@ text {
 	fill: #f60;
 }
 
-#line text {
+#link text {
 	font-size: 11px;
 	fill: #aaa;
 	cursor: pointer;
+
 }
 
 #link line {
@@ -140,6 +147,12 @@ body:not(.name) tspan:first-child {
     }
     to {
     	stroke-opacity: 1;
+    }
+}
+
+@keyframes flow {
+    to {
+        stroke-dashoffset: 10px;
     }
 }
 
@@ -233,28 +246,28 @@ function onDragMove(e) {
 	moveMap(window.pos.x + drag.dragX / window.scale, window.pos.y + drag.dragY / window.scale);
 }
 
-function parse(base) {
+function parse(node) {
 	const title = [];
     
-	if (base.ip) {
-		title.push("IP 주소 : "+ base.ip);
+	if (node.ip) {
+		title.push("IP 주소 : "+ node.ip);
 	}
 
-	if (base.name) {
-		title.push("노드명 : "+ base.name);
+	if (node.name) {
+		title.push("노드명 : "+ node.name);
 	}
 
-    if("status" in base) {
-        title.push("상태 : "+ (base.status? "정상": "응답 없음"));
+    if("status" in node) {
+        title.push("상태 : "+ (node.status? "정상": "응답 없음"));
     }
 
-    if("status" in base && base.status && "resource" in base) {
+    if("status" in node && node.status && "resource" in node) {
         let
             oidData,
             cpu = [];
             
-        for (let index in base.resource) {
-            oidData = base.resource[index];
+        for (let index in node.resource) {
+            oidData = node.resource[index];
 
             //응답 속도
             (function(rtt) {
@@ -334,14 +347,14 @@ function onMouseOver(e) {
 
 function addNode(id, pos) {
 	const
-        base = parent.nodeData[id],
+        node = parent.nodeData[id],
 		svgDevice = document.createElementNS(SVG_NS, "g"),
 		svgIcon = document.createElementNS(SVG_NS, "image"),
 		svgBG = document.createElementNS(SVG_NS, "circle"),
 		svgLabel = document.createElementNS(SVG_NS, "text"),
 		svgAddr = document.createElementNS(SVG_NS, "tspan"),
 		svgName = document.createElementNS(SVG_NS, "tspan"),
-		icon = getIcon(base.type || "unknown");
+		icon = parent.iconData[node.type || "unknown"];
 	
     pos = pos || parent.posData[id];
 
@@ -360,12 +373,12 @@ function addNode(id, pos) {
 
 	svgDevice.onmousedown = setClick;
 	
-	if (base.role === "group") {
+	if (icon.group === "group") {
 		svgDevice.onclick = parent.moveStage.bind(svgDevice, id);
 
 		addClass(svgDevice, "group");
 	}
-	else if (base.protocol) {
+	else if (node.protocol) {
 		svgDevice.onclick = function () { //bind 사용하면 event가 arguments로 따라가서 안됨
 			if (window.click) {
                 window.sessionStorage.setItem("node_id", id);
@@ -377,8 +390,8 @@ function addNode(id, pos) {
 		svgDevice.onmouseenter = onMouseOver;
 	}
 
-	svgName.textContent = base.name || base.ip || "";
-	svgAddr.textContent = base.ip || base.name || "";
+	svgName.textContent = node.name || node.ip || "";
+	svgAddr.textContent = node.ip || node.name || "";
 	
 	svgLabel.appendChild(svgName);
 	svgLabel.appendChild(svgAddr);
@@ -397,7 +410,7 @@ function addNode(id, pos) {
 	
 	window.nodeSVGMap[id] = svgDevice;
     
-	if ("protocol" in base) {
+	if ("protocol" in node) {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
 	}
 	else if (icon.group === "group") {
@@ -460,230 +473,12 @@ function hasClass(e, className) {
 	return true;
 }
 
-function Link(link1, link2, option) {
-	this.container = document.createElementNS(SVG_NS, "g");
-	
-	this.line = document.createElementNS(SVG_NS, "line");
-
-	addClass(this.container, "line");
-	
-	if (option) {
-		this.baseColor = option.color;
-
-		this.color(option.color);
-		this.width(option.width);
-	}
-	else {
-		this.baseColor = Line.COLOR_DEFAULT;
-
-		this.width(Line.WIDTH);
-		this.color(Line.COLOR_DEFAULT);
-	}
-
-	this.line.setAttribute("x1", 0);
-	this.line.setAttribute("y1", 0);
-
-	this.container.appendChild(this.line);
-
-	if (link1) {
-		this.label1 = this.container.appendChild(this.label(link1.index, link1.name));
-	}
-
-	if (link2) {
-		this.label2 = this.container.appendChild(this.label(link2.index, link2.name));
-	}
-
-	this.bar = document.createElementNS(SVG_NS, "rect");
-	this.bar.setAttribute("width", Line.BAR_WIDTH *2);
-	this.bar.setAttribute("height", Line.BAR_HEIGHT);
-	this.container.appendChild(this.bar);
-
-	this.barIn = document.createElementNS(SVG_NS, "rect");
-	this.barIn.setAttribute("width", Line.BAR_WIDTH);
-	this.container.appendChild(this.barIn);
-
-	this.barOut = document.createElementNS(SVG_NS, "rect");
-	this.barOut.setAttribute("width", Line.BAR_WIDTH);
-	this.container.appendChild(this.barOut);
-}
-
-Link.prototype = {
-	color: function (color = this.baseColor) {
-		this.line.setAttribute("stroke", color);
-	},
-	width: function (width) {
-		this.line.setAttribute("stroke-width", width);
-	},
-	move: function (x1, y1, x2, y2) {
-		this.container.setAttribute("transform", "translate("+ x1 +","+ y1 +")");
-
-		this.line.setAttribute("x2", x2);
-		this.line.setAttribute("y2", y2);
-		
-		if (this.label1) {
-			this.label1.setAttribute("x", Math.round(x2 /3));
-			this.label1.setAttribute("y", Math.round(y2 /3));
-		}
-		if (this.label2) {	
-			this.label2.setAttribute("x", Math.round(x2 *2/3));
-			this.label2.setAttribute("y", Math.round(y2 *2/3));
-		}
-
-		this.translate(this.bar, x2 /2 - Line.BAR_WIDTH,y2 /2);
-		this.translate(this.barIn, x2 /2 -Line.BAR_WIDTH, y2 /2);
-		this.translate(this.barOut, x2 /2, y2 /2);
-	},
-	translate: function (svg, x, y) {
-		svg.setAttribute("transform", "translate("+ x +","+ y +") scale(1 -1)");
-	},
-	label: function (index, name) {
-		const svg = document.createElementNS(SVG_NS, "text");
-				
-		if (name.length > Line.MAX_LABEL_LEN) {
-			name = name.substring(0, Line.MAX_LABEL_LEN) +"...";
-		}
-
-		svg.textContent = name;
-
-		return svg;
-	}
-};
-
-function Line(id1, id2) {
-	this.pos1 = parent.posData[this.id1 = id1];
-	this.pos2 = parent.posData[this.id2 = id2];
-}
-
-function Line(pos1, pos2) {
-	this.pos1 = pos1;
-	this.pos2 = pos2;
-}
-
-Line.COLOR_NORMAL = "#d4af37",
-Line.COLOR_SHUTDOWN = "#f00",
-Line.COLOR_DISABLED = "#ddd",
-Line.COLOR_DEFAULT = "#d4af37";
-Line.BAR_WIDTH = 10;
-Line.BAR_HEIGHT = 30;
-Line.WIDTH = 2;
-Line.MAX_LABEL_LEN = 16;
-
-Line.DIFF = 8;
-
-Line.prototype = {
-	addLink: function (link1, link2, option) {
-		const oLink = new Link(link1, link2, option);
-		
-		if (!this.linkList) {
-			this.linkList = oLink;
-		}
-		else {
-			if (!Array.isArray(this.linkList)) {
-				this.linkList = [this.linkList];
-			}
-			
-			this.linkList.push(oLink);
-		}
-
-		this.move();
-
-		return oLink;
-	},
-	move: function () {
-		const theta = Math.atan2(this.pos2.y - this.pos1.y, this.pos2.x - this.pos1.x);
-
-		if (Array.isArray(this.linkList)) {
-			const len = this.linkList.length -1;
-
-			this.linkList.forEach((oLink, i) => {
-				oLink.move(
-					this.pos1.x + Math.cos(theta -Math.PI /2) * (len -i *2) *Line.DIFF,
-					this.pos1.y + Math.sin(theta -Math.PI /2) * (len -i *2) *Line.DIFF,
-					this.pos2.x - this.pos1.x, this.pos2.y - this.pos1.y);
-			});
-		}
-		else if (this.linkList){
-			this.linkList.move(this.pos1.x, this.pos1.y, this.pos2.x - this.pos1.x, this.pos2.y - this.pos1.y);
-		}
-	},
-	traffic: function (linkList) {
-		if (Array.isArray(this.linkList)) {
-			this.linkList.forEach((oLink, i) => {
-				this.set(oLink, linkList[i]);
-			});
-		}
-		else {
-			this.set(this.linkList, linkList);
-		}
-	},
-	set: function (oLink, link) {
-		let showBar = false;
-
-		switch (link.status) {
-		case 1:
-			oLink.color();
-
-			if ("in" in link && oLink.barIn) {
-				oLink.barIn.setAttribute("height", Math.min(BAR_HEIGHT, link.in *BAR_HEIGHT /100));
-
-				showBar = true;
-			}
-
-			if ("out" in link && oLink.barOut) {
-				oLink.barOut.setAttribute("height", Math.min(BAR_HEIGHT, link.out *BAR_HEIGHT /100));
-
-				showBar = true;
-			}
-
-			break;
-		case -1:
-			oLink.color(Line.COLOR_SHUTDOWN);
-
-			break;
-		default:
-			oLink.color(Line.COLOR_DISABLED);
-		}
-
-		window[showBar? "addClass": "removeClass"] (oLink.container, "show");
-	}
-};
-
-function addLink(oLine, id1, id2, link1, link2, option) {
-	const oLink = oLine.addLink(link1, link2, option);
-
-	window.lineCanvas.appendChild(oLink.container);
-
-	if (oLink.label1) {
-        oLink.label1.onclick = function () {
-            window.sessionStorage.setItem("node_id", id1);
-            window.sessionStorage.setItem("chart", "/chart_throughput.html");
-            window.sessionStorage.setItem("index", link1.index);
-            window.sessionStorage.setItem("previous", "/dashboard.html");
-
-            window.location.href = "/chart.html";
-        }
-	}
-
-	if (oLink.label2) {
-        oLink.label2.onclick = function () {
-            window.sessionStorage.setItem("node_id", id2);
-            window.sessionStorage.setItem("chart", "/chart_throughput.html");
-            window.sessionStorage.setItem("index", link2.index);
-            window.sessionStorage.setItem("previous", "/dashboard.html");
-
-            window.location.href = "/chart.html";
-        }
-	}
-
-	return oLink;
-}
-
-function drawPath(nodeFrom, nodeTo, path) {
+function drawPath(nodeFrom, nodeTo, option, linkArray) {
     if (!(nodeFrom in window.nodeSVGMap) && !(nodeTo in window.nodeSVGMap)) {
 		return;
 	}
 
-    const
+    var
         posFrom = parent.posData[nodeFrom],
         posTo = parent.posData[nodeTo];
 
@@ -717,96 +512,50 @@ function drawPath(nodeFrom, nodeTo, path) {
     
     const
         container = document.createElementNS(SVG_NS, "g"),
-        line = document.createElementNS(SVG_NS, "line");
+        path = document.createElementNS(SVG_NS, "polyline"),
+        x = posTo.x - posFrom.x,
+        y = posTo.y - posFrom.y;
 	
-	addClass(container, "line");
+	addClass(container, "path");
 	
-	line.setAttribute("x1", 0);
-	line.setAttribute("y1", 0);
-    line.setAttribute("x2", posTo.x - posFrom.x);
-	line.setAttribute("y2", posTo.y - posFrom.y);
-    line.setAttribute("stroke", "#dddddd");
-    line.setAttribute("stroke-width", 1);
+	path.setAttribute("x1", 0);
+	path.setAttribute("y1", 0);
 
-    container.appendChild(line);
+    switch (option.type) {
+        case "clock":
+            path.setAttribute("points", "0,0 "+ x +",0 "+ x +","+ y);
+
+            break;
+        case "counter":
+            path.setAttribute("points", "0,0 0,"+ y +" "+ x +","+ y);
+
+            break;
+        default:
+            path.setAttribute("points", "0,0 "+ x +", "+ y);
+
+            if (linkArray) {
+                let
+                    text = document.createElementNS(SVG_NS, "text"),
+                    link;
+
+                container.appendChild(text);
+
+                linkArray.forEach(id => {
+                    link = parent.linkData[id];
+
+                    console.log(link);
+                });
+            }
+    }
+
+    path.setAttribute("stroke", option.color || parent.settingData["linkColor"] || "#ffffff");
+    path.setAttribute("stroke-width", option.size || parent.settingData["linkSize"] || 1);
+
+    container.appendChild(path);
 
     container.setAttribute("transform", "translate("+ posFrom.x +","+ posFrom.y +")");
 
-    window.lineCanvas.appendChild(container);
-}
-
-function drawLine(id, line) {
-	const
-		ar = id.split("."),
-		id1 = "node."+ ar[1],
-		id2 = "node."+ ar[2];
-	
-	if (!(id1 in parent.nodeData)) {
-		console.log("존재하지 않는 노드 "+ id1);
-
-		return;
-	}
-
-	if (!(id2 in parent.nodeData)) {
-		console.log("존재하지 않는 노드 "+ id2);
-		
-		return;
-	}
-
-	if (!(id1 in window.nodeSVGMap) && !(id2 in window.nodeSVGMap)) {
-		return;
-	}
-
-	var
-        pos1 = parent.posData[id1],
-        pos2 = parent.posData[id2];
-
-    if (!(id1 in nodeSVGMap)) {
-        const id = parent.findParentFromStage(pos1.parent);
-
-        if (id) {
-            pos1 = parent.posData[id];
-        }
-        else if (parent.upper) {
-            pos1 = UPPER_POS;
-        }
-        else {
-            return;
-        }
-    }
-
-    if (!(id2 in nodeSVGMap)) {
-        const id = parent.findParentFromStage(pos2.parent);
-
-        if (id) {
-            pos2 = parent.posData[id];
-        }
-        else  if (parent.upper) {
-            pos2 = UPPER_POS;
-        }
-        else {
-            return;
-        }
-    }
-
-	var oLine = new Line(pos1, pos2);
-
-	window.lineMap[id] = oLine;
-
-	if (Array.isArray(line[id1])) {
-		line[id1].forEach((link, i) => {
-			addLink(oLine, id1, id2, link, line[id2][i], line.option)
-		});
-	}
-	else {
-		addLink(oLine, id1, id2, line[id1], line[id2], line.option);
-	}
-
-	return true;
-}
-
-function getIcon (type) {
-	return top.setting.icon && top.setting.icon[type] || top.store.icon[type];
+    window.pathCanvas.appendChild(container);
 }
 
 function lookAt (pos) {
@@ -844,8 +593,8 @@ function start () {
 }
 
 function display() {
-    if ("display" in parent.setting) {
-	    document.body.classList[parent.setting.display == "name"? "add": "remove"]("name");
+    if ("display" in parent.settingData) {
+	    document.body.classList[parent.settingData.display == "name"? "add": "remove"]("name");
     }
 }
 
@@ -858,7 +607,7 @@ function display() {
                 <circle r="35" id="circle"></circle>
             </defs>
             <g id="transform" transform="translate(0, 0) scale(1, 1) translate(0, 0)">
-                <g id="line"></g>
+                <g id="path"></g>
                 <g id="device"></g>
             </g>
         </svg>
@@ -887,7 +636,7 @@ var
 var 
     mapCanvas = document.getElementById("map"),
     deviceCanvas = document.getElementById("device"),
-	lineCanvas = document.getElementById("line"),
+	pathCanvas = document.getElementById("path"),
 	transform = document.getElementById("transform").transform.baseVal,
     parentAnchor = document.querySelector("g.parent"),
     lineMap = {},
@@ -896,11 +645,6 @@ var
 	scale = 1,
     click = false,
     thread;
-
-if (top.setting.link) {
-	Line.COLOR_DEFAULT = top.setting.link.color;
-	Line.WIDTH = top.setting.link.size || 0.5;
-}
 
 new Draggable(window.mapCanvas);
 

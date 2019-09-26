@@ -114,10 +114,10 @@ body:not(.loading) .bg_loading {
 .switch >.slider:before {
     position: absolute;
     content: "";
-    height: 0.6em;
-    width: 0.6em;
-    left: 0.2em;
-    bottom: 0.2em;
+    height: 0.8em;
+    width: 0.8em;
+    left: 0.1em;
+    bottom: 0.1em;
     background-color: #fff;
     transition: .4s;
 }

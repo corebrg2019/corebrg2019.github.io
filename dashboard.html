@@ -60,17 +60,33 @@ aside> .top {
 
 nav {
     flex: none;
-	padding: 5px;
+	padding: 0.5em;
     color: #fff;
     display: flex;
-}
-
-nav >img {
-	vertical-align: bottom;
+    background-color: #4d525a;
 }
 
 nav >* {
     margin: 0 1px;
+}
+
+nav >img {
+    width: 2em; height: 2em;
+}
+
+nav >label.switch {
+    font-size: 2em;
+}
+
+nav >select {
+    height: 2em;
+    vertical-align: top;
+    box-sizing: border-box;
+}
+
+nav  >form >input {
+    height: 2em;
+    box-sizing: border-box;
 }
 
 #summary_list {
@@ -290,7 +306,11 @@ div.nav.hide +#summary_list {
 // public
 
 function moveStage(id) {
-	top.store.parent = id || undefined;
+    if (id) {
+        window.sessionStorage.setItem("stage_id", String(id));
+    } else {
+        window.sessionStorage.removeItem("stage_id");
+    }
 
 	window.location.reload();
 }
@@ -309,6 +329,9 @@ function moveStage(id) {
                 <option value="name">장비명
                 <option value="address">IP 주소
             </select>
+            <form id="search">
+                <input name="keyword" type="text" placeholder="Search" required>
+            </form>
         </nav>
 		<article>
 			<aside>
@@ -341,11 +364,14 @@ function moveStage(id) {
             <iframe class="top"></iframe>
 		</article>
 
+        <script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
 		<script>
 
 var
-	upper = top.store.parent,
+	upper = window.sessionStorage.getItem("stage_id") && Number(window.sessionStorage.getItem("stage_id")) || undefined,
     nodeData, posData, pathData,
+    iconData = ITAhM.iconData,
 	nodeList = [],
     mapList = [],
     shutdownList = [],
@@ -365,7 +391,15 @@ var
 		
 		timer = setTimeout(() => {
 			requestAnimationFrame(t => {
-				top.store.focus = id;
+                const pos = window.posData[id];
+
+                if (pos.parent) {
+                    window.sessionStorage.setItem("stage_id", String(pos.parent));
+                } else {
+                    window.sessionStorage.removeItem("stage_id");
+                }
+                    
+                window.sessionStorage.setItem("focus_id", String(id));
 
 				window.location.reload();
 			});
@@ -379,6 +413,35 @@ document.body.querySelector("div.nav").onclick = function (e) {
 
 document.getElementById("edit").onclick = function () {
 	window.location.href = "/map_edit.html";
+};
+
+document.getElementById("search").onsubmit = function (e) {
+    e.preventDefault();
+
+    this.elements["keyword"].disabled = true;
+
+    const keyword = this.elements["keyword"].value;
+    var
+        found = false,
+        node;
+
+    for (let id in window.nodeData) {
+        node = window.nodeData[id];
+
+        if (keyword === node.ip || keyword === node.name) {
+            found = true;
+            
+            window.sessionStorage.setItem("focus_id", String(id));
+
+            window.location.reload();
+        }
+    }
+
+    if (!found) {
+        alert("Information.\n\n검색 결과가 없습니다.");
+    }
+
+    this.elements["keyword"].disabled = false;
 };
 
 function findParentFromStage(parent) {
@@ -452,52 +515,49 @@ function findParentFromStage(parent) {
 
         window.shutdownList.forEach(id => mapFrame.contentWindow.setNode(id, "shutdown"));
         
-        for (let nodeFrom in window.pathData) {
-            let peers = window.pathData[nodeFrom];
+        const linkMap = {};
+        var link;
 
-            for (let nodeTo in peers) {
-                mapFrame.contentWindow.drawPath(nodeFrom, nodeTo, peers[nodeTo]);
+        for (let id in window.linkData) {
+            link = window.linkData[id];
+
+            if (!linkMap[link.nodeFrom]) {
+                linkMap[link.nodeFrom] = {};
+            }
+
+            if (!linkMap[link.nodeTo]) {
+                linkMap[link.nodeTo] = {};
+            }
+
+            if (linkMap[link.nodeFrom][link.nodeTo]) {
+                linkMap[link.nodeFrom][link.nodeTo].push(id);
+            } else {
+                linkMap[link.nodeFrom][link.nodeTo] =
+                linkMap[link.nodeTo][link.nodeFrom] = [id];
+            } 
+        }
+        
+        var peerMap;
+
+        for (let nodeFrom in window.pathData) {
+            peerMap = window.pathData[nodeFrom];
+
+            for (let nodeTo in peerMap) {
+                link = linkMap[nodeFrom];
+
+                mapFrame.contentWindow.drawPath(nodeFrom, nodeTo, peerMap[nodeTo], link && link[nodeTo]);
             }
         }
 
         (id => {
             if (id) {
-                delete top.store.focus;
+                window.sessionStorage.removeItem("focus_id");
             
                 if (id in window.posData) {
-                    const pos = window.posData[id];
-
-                    if (pos.parent && !(pos.parent in window.nodeData)) {
-                        pos.parent = undefined;
-                    }
-
-                    window.upper = top.store.parent = pos.parent;
-                    
-                    mapFrame.contentWindow.lookAt(pos);
-                }
-                else if (id in window.pathData) {
-                    const
-                        ar = id.split("."),
-                        id1 = "node."+ ar[1],
-                        id2 = "node."+ ar[2];
-
-                    if (id1 in window.posData && id2 in window.posData) {
-                        const
-                            pos1 = window.posData[id1],
-                            pos2 = window.posData[id2];
-                        
-                        if (pos1.parent === pos2.parent) {
-                            window.upper = top.store.parent = pos1.parent;
-
-                            mapFrame.contentWindow.lookAt({
-                                x: (pos1.x + pos2.x) / -2,
-                                y: (pos1.y + pos2.y) /-2
-                            });
-                        }
-                    }
+                    mapFrame.contentWindow.lookAt(window.posData[id]);
                 }
             }
-        })(top.store.focus);
+        })(window.sessionStorage.getItem("focus_id"));
 
         mapFrame.contentWindow.start();
 	};
@@ -515,7 +575,7 @@ function findParentFromStage(parent) {
         }, function () {
             switch (this.status) {
             case 200:
-                window.setting.display = display.value;
+                window.settingData.display = display.value;
 
                 mapFrame.contentWindow.display();
                 topFrame.contentWindow.display();
@@ -536,17 +596,17 @@ function findParentFromStage(parent) {
 
         map.disabled = true;
 
-        window.setting.map = map.checked? "map3d.html": "map2d.html";
+        window.settingData.map = map.checked? "map3d.html": "map2d.html";
 
         top.postRequest({
             command: "set",
             target: "setting",
             key: "map",
-            value: window.setting.map
+            value: window.settingData.map
         }, function () {
             switch (this.status) {
             case 200:
-                mapFrame.src = window.setting.map;
+                mapFrame.src = window.settingData.map;
             
                 break;
             default:
@@ -561,41 +621,46 @@ function findParentFromStage(parent) {
     
     top.postRequest({
         command: "get",
-        target: ["node", "path", "position", "setting"]
+        target: ["node", "path", "link", "position", "setting", "icon"]
     }, function () {
         switch (this.status) {
         case 200:
             const target = JSON.parse(this.responseText);
             
             window.nodeData = target.node;
+            window.linkData = target.link;
             window.pathData = target.path;
             window.posData = target.position;
-            window.setting = target.setting;
-
-            initialize();
-
-            if ("background" in setting) {
-                document.body.style.backgroundImage = "url("+ top.setting.background +")";
+            window.settingData = target.setting;
+            
+            for (let type in target.icon) {
+                window.iconData[type] = target.icon[type];
+            }
+            
+            if ("background" in window.settingData) {
+                document.body.style.backgroundImage = "url("+ window.settingData.background +")";
 
                 document.body.classList.add("background");
             }
 
-            if ("display" in setting) {
-                document.getElementById("display").value = setting.display;
+            if ("display" in window.settingData) {
+                document.getElementById("display").value = window.settingData.display;
             }
             else {
-                setting.display = "name";
+                window.settingData.display = "name";
             }
 
-            if ("map" in setting && setting.map == "map3d.html") {
+            if ("map" in window.settingData && window.settingData.map == "map3d.html") {
                 document.getElementById("threed").checked = true;
             }
             else {
-                setting.map = "map2d.html";
+                window.settingData.map = "map2d.html";
             }
             
+            initialize();
+
             topFrame.src ="/top.html";
-            mapFrame.src = setting.map;
+            mapFrame.src = window.settingData.map;
             
             break;
         default:
@@ -628,14 +693,16 @@ function findParentFromStage(parent) {
                 };
             }
             
+            // 상위 그룹이 삭제 되었음
             if (pos.parent && !(pos.parent in window.nodeData)) {
                 pos.parent = undefined;
             }
 
             if (pos.parent === window.upper) {
+                window.mapList.push(id);
+
                 if ("protocol" in base) {
                     window.nodeList.push(id);
-                    window.mapList.push(id);
 
                     if ("status" in base && !base.status) {
                         status = "shutdown";

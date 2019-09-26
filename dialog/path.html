@@ -86,7 +86,8 @@ td, th {
 }
 
 td >input[type=text],
-td >input[type=number] {
+td >input[type=number],
+select {
     padding: 0.5em;
     width: 100%;
     box-sizing: border-box;
@@ -232,16 +233,16 @@ body.initialized input[name=create] {
                             <div class="details">
                                 <ul>
                                     <li>
-                                        <span class="node_from">
+                                        <span id="node_from">
                                             node1
                                         </span>
-                                        <select id="index_from"></select>
+                                        <select id="index_from" disabled></select>
                                     </li>
                                     <li>
-                                        <span class="node_to">
+                                        <span id="node_to">
                                             node2
                                         </span>
-                                        <select id="index_to"></select>
+                                        <select id="index_to" disabled></select>
                                     </li>
                                 </ul>
                                 <nav>
@@ -262,7 +263,12 @@ body.initialized input[name=create] {
                         <tr>
                             <th>선 종류</th>
                             <td><input type="checkbox" name="use_type"></td>
-                            <td><input type="text" name="type" placeholder="기본" required disabled></td>
+                            <td>
+                                <select name="type" required disabled>
+                                    <option value="" selected>기본</option>
+                                    <option value="clock">꺽은선(시계방향)</option>
+                                    <option value="counter">꺽은선(반시계방향)</option>
+                                </select>
                         </tr>
                         <tr>
                             <th>선 색상</th>
@@ -382,18 +388,27 @@ document.getElementById("close").onclick = close;
     }
 
     form.elements["set_link"].onclick = e => {
-        const link = {
-            nodeFrom: nodeFrom,
-            nodeTo: nodeTo,
-            id: Number(document.querySelector(".summary.selected").dataset.id)
-        };
+        document.body.classList.add("loading");
 
-        if (document.getElementById("index_from").value) {
-            link.indexFrom = document.getElementById("index_from").value;
+        const link = {
+                nodeFrom: nodeFrom,
+                nodeTo: nodeTo,
+                id: Number(document.querySelector(".summary.selected").dataset.id)
+            };
+        var select;
+
+        select = document.getElementById("index_from");
+
+        if (select.value) {
+            link.indexFrom = Number(select.value);
+            link.indexFromName = select.options[select.selectedIndex].text;
         }
 
-        if (document.getElementById("index_to").value) {
-            link.indexTo = document.getElementById("index_to").value;
+        select = document.getElementById("index_to");
+
+        if (select.value) {
+            link.indexTo = Number(select.value);
+            link.indexToName = select.options[select.selectedIndex].text;
         }
 
         if (Object.keys(customInputMap).length > 0) {
@@ -405,8 +420,6 @@ document.getElementById("close").onclick = close;
 
             link.extra = extra;
         }
-        
-		document.body.classList.add("loading");
 
         top.postRequest({
             command: "set",
@@ -562,7 +575,7 @@ document.getElementById("close").onclick = close;
                 initCustom(JSON.parse(this.responseText).customLink.split(','));
 
             case 204:
-                initPath();
+                initNodeFrom();
                 
                 break;
             default:
@@ -573,6 +586,102 @@ document.getElementById("close").onclick = close;
         });
     };
     
+    function initNodeFrom() {
+        top.postRequest({
+            command: "get",
+            target: "node",
+            id: nodeFrom,
+            resource: true
+        }, function () {
+            switch(this.status) {
+            case 200:
+                window.nodeFrom = JSON.parse(this.responseText);
+
+                initNodeTo();
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    }
+
+    function initNodeTo() {
+        top.postRequest({
+            command: "get",
+            target: "node",
+            id: nodeTo,
+            resource: true
+        }, function () {
+            switch(this.status) {
+            case 200:
+                window.nodeTo = JSON.parse(this.responseText);
+
+                initNode();
+                break;
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    }
+
+    function initNode() {
+        document.getElementById("node_from").textContent = window.nodeFrom.name || window.nodeFrom.ip || "노드.1";
+
+        if (window.nodeFrom.resource) {
+            const select = document.getElementById("index_from");
+            let indexData, option;
+
+            for (let index in window.nodeFrom.resource) {
+                indexData = window.nodeFrom.resource[index];
+
+                if ("1.3.6.1.2.1.2.2.1.7" in indexData && indexData["1.3.6.1.2.1.2.2.1.7"] === "1") {
+                    option = document.createElement("option");
+
+                    option.value = index;
+                    option.text = indexData["1.3.6.1.2.1.2.2.1.2"];
+                    option.title = indexData["1.3.6.1.2.1.31.1.1.1.1"];
+
+                    select.appendChild(option);
+                }
+            }
+
+            select.selectedIndex = -1;
+
+            select.disabled = false;
+        }
+
+        document.getElementById("node_to").textContent = window.nodeTo.name || window.nodeTo.ip || "노드.2";
+
+        if (window.nodeTo.resource) {
+            const select = document.getElementById("index_to");
+            let indexData, option;
+
+            for (let index in window.nodeTo.resource) {
+                indexData = window.nodeTo.resource[index];
+
+                if ("1.3.6.1.2.1.2.2.1.7" in indexData && indexData["1.3.6.1.2.1.2.2.1.7"] === "1") {
+                    option = document.createElement("option");
+
+                    option.value = index;
+                    option.text = indexData["1.3.6.1.2.1.2.2.1.2"];
+                    option.title = indexData["1.3.6.1.2.1.31.1.1.1.1"];
+
+                    select.appendChild(option);
+                }
+            }
+
+            select.selectedIndex = -1;
+
+            select.disabled = false;
+        }
+
+        initPath();
+    }
+
     function initPath() {
         top.postRequest({
             command: "get",
@@ -587,6 +696,7 @@ document.getElementById("close").onclick = close;
                 ["type", "color", "size"].forEach(name => {
                     if (name in path) {
                         form.elements[name].value = path[name];
+                        form.elements[name].disabled = false;
                         form.elements["use_"+ name].checked = true;
                     }
                 });
@@ -673,15 +783,20 @@ document.getElementById("close").onclick = close;
         this.parentNode.insertBefore(details, this.nextSibling);
 
         if (link) {
-            if (link.extra) {
-                for (let key in customInputMap) {
-                    customInputMap[key].value = link.extra[key] || "";
-                }
+            if (link.indexFrom) {
+                document.getElementById("index_from").value = link.indexTo;
+            } else {
+                document.getElementById("index_from").selectedIndex = -1;
             }
-            else {
-                [].forEach.call(details.querySelectorAll("input[type=text"), input => {
-                    input.value = "";
-                });
+
+            if (link.indexTo) {
+                document.getElementById("index_to").value = link.indexTo;
+            } else {
+                document.getElementById("index_to").selectedIndex = -1;
+            }
+
+            for (let key in customInputMap) {
+                customInputMap[key].value = link.extra && link.extra[key] || "";
             }
         }
 
@@ -691,16 +806,16 @@ document.getElementById("close").onclick = close;
     function addLink(link) {
         const summary = document.createElement("div");
         
-        summary.appendChild(document.createElement("span"));
-        summary.appendChild(document.createElement("span"));
+        summary.appendChild(document.createElement("span")).textContent = link.indexFromName || "";
+        summary.appendChild(document.createElement("span")).textContent = link.indexToName || "";
 
         summary.classList.add("summary");
 
         document.getElementById("list").appendChild(summary);
 
-        summary.onclick = openLinkDialog;
-
         summary.dataset.id = link.id;
+
+        summary.onclick = openLinkDialog;
     }
     
 }) (document.querySelector("form"));

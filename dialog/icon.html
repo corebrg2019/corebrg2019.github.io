@@ -5,8 +5,8 @@
 		<title>dialog</title>
 		
 		<style>
-@import "css/style.css";
-@import "css/dialog.css";
+@import "/css/style.css";
+@import "/css/dialog.css";
 
 body {
 	margin: 0; padding: 0;
@@ -111,7 +111,7 @@ input[type="checkbox"] {
 	position: absolute;
 }
 
-body:not(.edit) input[type=reset] {
+body:not(.removable) input[type=reset] {
 	display: none;
 }
 
@@ -146,7 +146,7 @@ body:not(.edit) input[type=reset] {
 			</div>
 			<footer>
                 <input type="reset" value="초기화" disabled>
-				<input type="submit" value="추가" disabled>
+                <input type="submit" value="추가" disabled>
 			</footer>
 			<div class="bg_loading"></div>
 		</form>
@@ -174,12 +174,7 @@ if (top.account.level === 0) {
 }
 
 (function (form) {
-    var
-        request = {
-            target: "icon",
-            command: "add"
-        },
-        opener;
+    var opener;
     
 	form.onreset = function (e) {
 		e.preventDefault();
@@ -188,9 +183,11 @@ if (top.account.level === 0) {
 			return;
 		}
         
-        request.command = "remove";
-        request.type = form.elements["type"].value;
-        top.postRequest(request, function () {
+        top.postRequest({
+            target: "icon",
+            command: "remove",
+            type: form.elements["type"].value
+        }, function () {
 			switch (this.status) {
 			case 200:
 				opener.location.reload();
@@ -211,15 +208,17 @@ if (top.account.level === 0) {
 	form.onsubmit = function (e) {
 		e.preventDefault();
 		
-        request.type = form.elements["type"].value;
-        request.icon = {
+		top.postRequest({
+            target: "icon",
+            command: document.body.classList.contains("removable")? "set": "add",
             type: form.elements["type"].value,
-            group: form.elements["group"].value,
-            src: form.elements["url"].value,
-            disabled: form.elements["disabled"].value
-        };
-        
-		top.postRequest(request, function () {
+            icon: {
+                type: form.elements["type"].value,
+                group: form.elements["group"].value,
+                src: form.elements["url"].value,
+                disabled: form.elements["disabled"].value
+            }
+        }, function () {
 			switch (this.status) {
 			case 200:
                 opener.location.reload();
@@ -251,18 +250,16 @@ if (top.account.level === 0) {
         if (type) {
             form.elements["type"].disabled = true;
 
-            form.querySelector("input[type=submit]").value = "수정";
+            document.querySelector("input[type=submit]").value = "수정";
 
             top.postRequest({
                 command: "get",
                 target: "icon",
                 type: type
-            }, function () {console.log(this.status);
+            }, function () {
                 switch(this.status) {
                 case 200:
-                    request.command = "set";
-
-                    document.body.classList.add("edit");
+                    document.body.classList.add("removable");
                 case 204:
                     initIcon(type, icon);
 

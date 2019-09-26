@@ -117,7 +117,7 @@ header {
         <script>
         
 function onSelectIcon(type, icon) {
-	top.showDialog.call(window, "/icon_dialog.html", type, icon);
+	top.showDialog.call(window, "/dialog/icon.html", type, icon);
 }
 
 function createGroup(name) {
@@ -197,7 +197,7 @@ var list = document.getElementById("list"),
     iconData = ITAhM.iconData;
 
 document.getElementById("add").onclick = e => {
-    top.showDialog.call(window, "/icon_dialog.html");
+    top.showDialog.call(window, "/dialog/icon.html");
 };
 
 top.postRequest({

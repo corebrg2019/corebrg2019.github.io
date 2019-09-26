@@ -127,42 +127,6 @@ function isIPv4(s) {
 		</script>
 		
 		<script>
-		
-function buildType() {
-	var df = document.createDocumentFragment(),
-		iconData = top.store.icon,
-		groupName, optgroup,
-		typeData = {},
-		group = {},
-		icon, type;
-	
-	;
-		
-	for (type in iconData) {
-		typeData[type] = ("icon" in top.setting && type in top.setting.icon? top.setting.icon: iconData)[type];
-	}
-	
-	for (type in typeData) {
-		icon = typeData[type];
-		
-		groupName = icon.group;
-		
-		optgroup = group[groupName];
-		
-		if (!optgroup) {
-			optgroup = document.createElement("optgroup");
-			optgroup.label = groupName;
-			
-			group[groupName] = optgroup;
-			
-			df.appendChild(optgroup);
-		}
-		
-		optgroup.appendChild(document.createElement("option")).text = type;
-	}
-	
-	return df;
-}
 
 function trimLabel(labels) {
 	var array = labels.split(","),
@@ -236,12 +200,12 @@ function trimLabel(labels) {
                 <div class="bg_loading"></div>
 			</div>
 		</form>
-		
+		<script src="/js/ITAhM.js"></script>
+        <script src="/js/icon.js"></script>
 		<script>
 
 var monitor = "none",
 	custom = {};
-
 
 function close() {
 	top.closeDialog(true);
@@ -268,8 +232,6 @@ document.getElementById("close").onclick = close;
 		
         form.elements["monitor"].disabled = false;
 	}
-
-	form.elements["type"].appendChild(buildType());
 
 	form.onsubmit = function (e) {
 		e.preventDefault();
@@ -430,22 +392,79 @@ document.getElementById("close").onclick = close;
             key: "customNode",
         }, function () {
             switch(this.status) {
-            case 200:
-                initCustom(JSON.parse(this.responseText).customNode.split(','));
+                case 200:
+                    initCustom(JSON.parse(this.responseText).customNode.split(','));
 
-            case 204:
-                initNode();
-                
+                case 204:
+                    buildType();
+                    
+                    break;
+                default:
+                    alert(top.getMessage(this.status));
+
+                    console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    };
+
+    function buildType() {
+        top.postRequest({
+            command: "get",
+            target: "icon"
+        }, function () {
+            switch (this.status) {
+            case 200:
+                const
+                    iconData = ITAhM.iconData,
+                    customData = JSON.parse(this.responseText),
+                    df = document.createDocumentFragment(),
+                    group = {};
+                let 
+                    groupName, optgroup, icon, type;
+	
+                for (let type in customData) {
+                    iconData[type] = customData[type];
+                }
+
+                for (let type in iconData) {
+                    icon = iconData[type];
+
+                    groupName = icon.group;
+
+                    if (groupName === "group") {
+                        continue;
+                    }
+
+                    optgroup = group[groupName];
+                    
+                    if (!optgroup) {
+                        optgroup = document.createElement("optgroup");
+                        optgroup.label = groupName;
+                        
+                        group[groupName] = optgroup;
+                        
+                        df.appendChild(optgroup);
+                    }
+
+                    optgroup.appendChild(document.createElement("option")).text = type;
+                }
+
+                form.elements["type"].appendChild(df);
+                form.elements["type"].selectedIndex = -1;
+
+                initDialog();
+
                 break;
+
             default:
                 alert(top.getMessage(this.status));
 
                 console.log(this.responseText && JSON.parse(this.responseText).error);
             }
         });
-    };
+    }
 
-    function initNode() {
+    function initDialog() {
 		if (nodeID) {
 			top.postRequest({
 				command: "get",

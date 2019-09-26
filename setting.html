@@ -115,35 +115,6 @@ ul.smtp >li >span:last-child {
 	flex: 2;
 }
 
-.color {
-	display: inline-block;
-	width: 20px; height: 20px;
-}
-
-.color.default.red {
-	background-color: #f00;
-}
-
-.color.default.orange {
-	background-color: #ffa500;
-}
-
-.color.default.green {
-	background-color: #0f0;
-}
-
-.color.pastel.red {
-	background-color: #8e24aa;
-}
-
-.color.pastel.orange {
-	background-color: #f6bf26;
-}
-
-.color.pastel.green {
-	background-color: #00897b;
-}
-
 #path:not(:empty)::before {
 	content: "(";
 }
@@ -322,13 +293,7 @@ function createItem(src, key, data, func) {
 					<input type="submit" value="적용" class="root">
 				</form>
 			</p>
-			<p>
-				<form id="top">
-					Top N : 
-					<input type="number" min="1" name="top">
-					<input type="submit" value="적용" class="root">
-				</form>	
-			</p>
+			
 			<div class="bg_loading"></div>
 		</div>
 		<h2>
@@ -367,61 +332,6 @@ function createItem(src, key, data, func) {
 					<input type="text" name="custom" placeholder="항목1 [,항목2 ...]">
 					<input type="submit" value="적용" class="root">
 					<i>콤마(,)로 구분</i>
-				</form>
-			</p>
-			<p>
-				<form id="dashboard">
-					대시보드 :
-					<ol id="resources" class="top">
-						<li data-value="responseTime">
-							<input type="checkbox" name="responseTime">
-							응답시간
-						<li data-value="processor">
-							<input type="checkbox" name="processor">
-							프로세서 로드
-						<li data-value="memory">
-							<input type="checkbox" name="memory">
-							메모리 사용량
-						<li data-value="memoryRate">
-							<input type="checkbox" name="memoryRate">
-							메모리 사용율
-						<li data-value="storage">
-							<input type="checkbox" name="storage">
-							스토리지 사용량
-						<li data-value="storageRate">
-							<input type="checkbox" name="storageRate">
-							스토리지 사용율
-						<li data-value="throughput">
-							<input type="checkbox" name="throughput">
-							통신 사용량
-						<li data-value="throughputRate">
-							<input type="checkbox" name="throughputRate">
-							통신 사용율
-						<li data-value="throughputErr">
-							<input type="checkbox" name="throughputErr">
-							통신 오류
-					</ol>
-					<input type="submit" value="적용" class="root">
-				</form>
-			</p>
-			<p>
-				<form id="color">
-					대시보드 테마 :
-					<ul class="top">
-						<li>
-							<input type="radio" name="color" value="default" checked>
-							<span class="color default red"></span>
-							<span class="color default orange"></span>
-							<span class="color default green"></span>
-						</li>
-						<li>
-							<input type="radio" name="color" value="pastel">
-							<span class="color pastel red"></span>
-							<span class="color pastel orange"></span>
-							<span class="color pastel green"></span>
-						</li>
-					</ul>
-					<input type="submit" value="적용" class="root">
 				</form>
 			</p>
 			<p>
@@ -594,11 +504,11 @@ if (top.account.level > 0) {
 (function (container) {
 	
 	container.elements["add"].onclick = function () {
-		top.showDialog.call(window, "/user_dialog.html");
+		top.showDialog.call(window, "/dialog/user.html");
 	};
 
 	function onSelectUser(name, user) {
-		top.showDialog.call(window, "/user_dialog.html", name, user);
+		top.showDialog.call(window, "/dialog/user.html", name, user);
 	}
 	
 }) (document.getElementById("event"));
@@ -743,32 +653,6 @@ if (top.account.level > 0) {
 		});
 	};
 
-	document.getElementById("top").onsubmit = function (e) {
-		e.preventDefault();
-		
-		document.body.classList.add("loading");
-		
-		top.postRequest({
-			command: "set",
-            target: "config",
-			key: "top",
-			value: Math.max(this.elements["top"].value, 1).toString()
-		}, function (response) {
-			switch(this.status) {
-			case 200:
-				alert("대시보드 Top N을 변경하였습니다.");
-				
-				break;
-			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
-			}
-			
-			container.classList.remove("loading");
-		});
-	};
-
 	top.postRequest({
 		command: "get",
 		target: "config"
@@ -782,7 +666,6 @@ if (top.account.level > 0) {
                 document.querySelector("select[name=timeout]").value =  config.timeout;
                 document.querySelector("select[name=retry]").value = config.retry;
                 document.querySelector("select[name=save_interval]").value = "saveInterval" in config? config.saveInterval: 1;
-				document.querySelector("input[name=top]").value = "top" in config? config.top: 10;
 
 				container.classList.remove("loading");
 
@@ -796,7 +679,8 @@ if (top.account.level > 0) {
 }) (document.getElementById("common"));
 
 (function (container) {
-	
+    var settingData;
+    
 	function postRequest(key, value, callback) {
         const request = {
 			command: "set",
@@ -813,7 +697,7 @@ if (top.account.level > 0) {
 		top.postRequest(request, function () {
 			switch(this.status) {
 			case 200:
-				top.setting[key] = value;
+		        settingData[key] = value;
 
 				callback && callback(key, value);
 
@@ -868,59 +752,6 @@ if (top.account.level > 0) {
 		postRequest("customLink", customs.join(","));
 	};
 
-	document.getElementById("dashboard").onsubmit = function (e) {
-		e.preventDefault();
-		
-		var order = [];
-		
-		[].forEach.call(this.querySelectorAll("li"), function (li) {
-			if (li.querySelector("input:checked")) {
-				order.push(li.dataset.value);
-			}
-		});
-		
-		if (order.length == 0) {
-			return alert ("선택한 리소스가 없습니다.");
-		}
-		
-		document.body.classList.add("loading");
-		
-		postRequest("dashboard", order);
-	};
-	
-	document.getElementById("color").onsubmit = function (e) {
-		e.preventDefault();
-		
-		postRequest("color", this.elements["color"].value);
-	};
-
-	[].forEach.call(document.getElementById("resources").querySelectorAll("li"), function (li) {
-		li.draggable = true;
-		
-		li.addEventListener("dragstart", function (e) {
-			e.stopPropagation();
-			
-			window.draggable = this;
-		});
-		
-		li.addEventListener("dragover", function (e) {
-			e.preventDefault();
-			
-			if (window.draggable === this) {
-				return;
-			}
-			
-			switch (window.draggable) {
-			case this.previousElementSibling:
-				this.parentNode.insertBefore(this, window.draggable);
-				
-				break;
-			default:
-				this.parentNode.insertBefore(window.draggable, this);
-			}
-		});
-	});
-
 	document.getElementById("link_color").onsubmit = function (e) {
 		e.preventDefault();
 		
@@ -933,61 +764,49 @@ if (top.account.level > 0) {
 		postRequest("linkSize", Math.max(this.elements["size"].value, 0).toString());
 	};
 
-	if ("menu" in top.setting) {
-		document.querySelector("select[name=menu]").value = top.setting.menu;
-	}
-	
-	if ("color" in top.setting) {
-		document.querySelector("input[name=color][value="+top.setting.color+"]").checked = true;
-	}
+    top.postRequest({
+        command: "get",
+        target: "setting"
+    }, function () {
+        switch (this.status) {
+            case 200:
+                settingData = JSON.parse(this.responseText);
+ 
+                if ("menu" in settingData) {
+                    document.querySelector("select[name=menu]").value = settingData.menu;
+                }
+                
+                if ("background" in settingData) {
+                    container.querySelector("input[name=background]").value = settingData.background;
+                }
 
-	if ("background" in top.setting) {
-		container.querySelector("input[name=background]").value = top.setting.background;
-	}
+                if ("custom" in settingData) {
+                    document.getElementById("node").querySelector("[name=custom]")
+                        .value = settingData.custom.split(",").join(", ");
+                }
+                
+                if ("customLink" in settingData) {
+                    document.getElementById("line").querySelector("[name=custom]")
+                        .value = settingData.customLink.split(",").join(", ");
+                }
 
-	if ("custom" in top.setting) {
-		document.getElementById("node").querySelector("[name=custom]")
-			.value = top.setting.custom.split(",").join(", ");
-	}
-	
-	if ("customLink" in top.setting) {
-		document.getElementById("line").querySelector("[name=custom]")
-			.value = top.setting.customLink.split(",").join(", ");
-	}
+                if ("linkColor" in settingData) {
+                    document.getElementById("link_color").querySelector("[name=color]").value = settingData.linkColor;
+                }
 
-	if ("dashboard" in top.setting) {
-		const list = document.getElementById("resources"),
-			order = top.setting.dashboard;
-		
-		for (let i=order.length, li; i > 0;) {
-			li = list.querySelector("li[data-value="+ order[--i] +"]");
+                if ("linkSize" in settingData) {
+                    document.getElementById("link_size").querySelector("[name=size]").value = settingData.linkSize;
+                }
+                container.classList.remove("loading");
 
-			list.insertBefore(li, list.firstElementChild);
-			
-			li.querySelector("input").checked = true;
-		}
-	}
-	else {
-		[].forEach.call(document.getElementById("resources").querySelectorAll("input[type=checkbox]"), function (input) {
-			input.checked = true;
-		});
-	}
+                break;
+            default:
+                alert("Error!\n\n"+
+                    "설정을 불러올 수 없습니다.");
 
-	if ("linkColor" in top.setting) {
-		const link = document.getElementById("link");
-
-		link.querySelector("[name=color]").value = top.setting.link.color;
-		link.querySelector("[name=size]").value = top.setting.link.size;
-	}
-
-    if ("linkSize" in top.setting) {
-		const link = document.getElementById("link");
-
-		link.querySelector("[name=color]").value = top.setting.link.color;
-		link.querySelector("[name=size]").value = top.setting.link.size;
-	}
-
-	container.classList.remove("loading");	
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    });
 
 }) (document.getElementById("setting"));
 
@@ -995,11 +814,11 @@ if (top.account.level > 0) {
 	container.onsubmit = function (e) {
 		e.preventDefault();
 
-		top.showDialog.call(window, "/account_dialog.html");
+		top.showDialog.call(window, "/dialog/account.html");
 	};
 
 	function onSelectAccount(name, account) {
-		top.showDialog.call(window, "/account_dialog.html", name, account);
+		top.showDialog.call(window, "/dialog/account.html", name, account);
 	}
 	
 	top.postRequest({
@@ -1041,7 +860,7 @@ if (top.account.level > 0) {
 	}
 
 	function onSelectProfile(name, profile) {
-		top.showDialog.call(window, "/profile_dialog.html", name, profile);
+		top.showDialog.call(window, "/dialog/profile.html", name, profile);
 	}
 
 	top.postRequest({

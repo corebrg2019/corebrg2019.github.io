@@ -17,13 +17,6 @@ article.itahm {
 	display: flex;
 }
 
-article.signin {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: #f9f9f9;
-}
-
 header {
 	color: #fff;
 	flex: none;
@@ -133,14 +126,16 @@ header ul.status >li:empty {
 	display: none;
 }
 
-div.frame {
+iframe {
+    width: 100%; height: 100%;
+	border: none;
+}
+
+main {
 	flex: 1;
 }
 
 #frame {
-	flex: 1;
-	width: 100%; height: 100%;
-	border: none;
 	background-color: #4d525a;
 }
 
@@ -179,77 +174,6 @@ div.log span {
 	border-radius: 1em 0 0 1em;
 }
 
-/** signin **/
-div.signin {
-	width: 320px;
-}
-
-p, input {
-	font-size: 13px;
-}
-
-h1, h2 {
-	text-align: center;
-}
-
-h1 img {
-	vertical-align: middle;
-}
-
-h2 {
-    color: #777;
-}
-
-form {
-	padding: 20px;
-	border: 1px solid #ddd;
-	background-color: #fff;
-}
-
-input {
-	width: 100%;
-	box-sizing: border-box;
-	padding: 10px;
-	border: 1px solid #ddd;
-	border-radius: 3px 3px 3px 3px;
-}
-
-input.button {
-	margin-top: 20px;
-	background-image: linear-gradient(#7af, #0084ff);
-	border: 1px solid #07f;
-	font-weight: bold;
-	color: #fff;
-}
-
-.flex {
-	display: flex;
-}
-
-.flex >input {
-	flex: 1;
-}
-
-input[name="ip"] {
-	background: url("/img/home.png") no-repeat 10px center;
-	padding-left: 36px;
-}
-
-input[name="tcp"] {
-	background: transparent url("/img/port.png") no-repeat 10px center;
-	padding-left: 36px;
-}
-
-input[name="username"] {
-	background: transparent url("/img/user.png") no-repeat 10px center;
-	padding-left: 36px;
-}
-
-input[name="password"] {
-	background: transparent url("/img/lock.png") no-repeat 10px center;
-	padding-left: 36px;
-}
-
 .bg_loading {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	background: #4d525a url("/img/loading.gif") no-repeat center;
@@ -257,12 +181,9 @@ input[name="password"] {
 	opacity: .5;
 }
 
-body:not(.ready) article.signin,
 body.authorized article.signin,
 body:not(.authorized) article.itahm,
 body:not(.loading) .bg_loading,
-body.set form.set,
-body:not(.set) form.account,
 body:not(.log) div.log,
 body:not(.dialog) #dialog {
 	display: none;

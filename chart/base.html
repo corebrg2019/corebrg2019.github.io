@@ -22,14 +22,14 @@ body {
 #graph >path {
 	stroke-width: 4px;
 	fill-opacity: 0.5;
-	animation: grow_area 0.5s;
+	animation: grow_area 2s;
 }
 
 #graph >path.avg {
 	stroke-width: 4px;
 	fill: none;
 	stroke: #fff;
-	animation: grow_avg 0.5s;
+	animation: grow_avg 2s;
 }
 
 #graph >path.line {
@@ -37,7 +37,14 @@ body {
 	fill: none;
     stroke: #777;
     stroke-opacity: 0.8;
-    animation: grow_data 0.5s;
+    animation: grow_data 2s;
+}
+
+#graph >circle {
+    stroke: #fff;
+    stroke-width: 0.5px;
+    fill: none;
+    animation: grow_pt 2s linear;
 }
 
 .balloon {
@@ -207,6 +214,11 @@ body.empty .no_data {
 	}
 }
 
+@keyframes grow_pt {
+	from {
+		transform: translateY(100%);
+	}
+}
 		</style>
 		<script>
 	
@@ -219,8 +231,8 @@ function clear(svgElement) {
 }
 
 function createDateText(x, y, date, pY, pM, pD) {
-	var svgText = document.createElementNS(svgNS, "text"),
-		yy = date.getFullYear(),	
+	var svgText = document.createElementNS("http://www.w3.org/2000/svg", "text"),
+		yy = date.getFullYear(),
 		m = date.getMonth(),
 		d = date.getDate(),
 		h = date.getHours(),
@@ -314,7 +326,7 @@ Area.prototype = {
  * private
  */
 function createValueText(x, y, value) {
-	var svgText = document.createElementNS(svgNS, "text");		
+	var svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");		
 	
 	svgText.setAttribute("x", x);
 	svgText.setAttribute("y", y);
@@ -514,32 +526,7 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
         const keys = chartData.parseData(start, end);
         
         if (keys) {
-            const path = new ITAhM.Path(graph);
-            let
-                millis = keys[0],
-                value = chartData.getData(millis, keys[1]);
-            
-            if (value) {
-                path.set("class", "line");
-                path.beginPath();
-                
-                path.moveTo(Math.round((Number(millis) - start) / tpp) , y = Math.round((value - summaryData.low) * yRatio));
-                
-                for (var i=1, _i=keys.length, y; i<_i; i++) {
-                    millis = keys[i];
-                    
-                    value = chartData.getData(millis, keys[i +1]);
-                    
-                    if (!value) {
-                        continue;
-                    }
-                    
-                    path.moveTo(Math.round((Number(millis) - start) / tpp), y);
-                    path.v(y = Math.round((value - summaryData.low) * yRatio));
-                }
-                
-                path.draw();
-            }
+            drawDetail(keys, chartData, summaryData.low, start, tpp, yRatio);
         }
     }
 
@@ -609,6 +596,59 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
     });
 }
 
+function drawDetail(keys, chartData, min, start, tpp, yRatio) {
+    const df = document.createDocumentFragment();
+    var pt;
+
+    keys.forEach((millis, i) => {
+        value = chartData.getData(millis, keys[i +1]);
+        
+        if (!value) {
+            return;
+        }
+        
+        pt = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+        pt.setAttributeNS(null, "r", 3);
+        pt.setAttributeNS(null, "cx", Math.round((Number(millis) - start) / tpp));
+        pt.setAttributeNS(null, "cy", Math.round((value - min) * yRatio));
+
+        df.appendChild(pt);
+    });
+
+    document.getElementById("graph").appendChild(df);
+}
+
+function _drawDetail(keys, chartData, min, start, tpp, yRatio) {
+    const path = new ITAhM.Path(document.getElementById("graph"));
+    var
+        millis = keys[0],
+        value = chartData.getData(millis, keys[1]),
+        x, y;
+    
+    if (value) {
+        path.set("class", "line");
+        path.beginPath();
+        
+        path.moveTo(Math.round((Number(millis) - start) / tpp) , y = Math.round((value - min) * yRatio));
+        
+        for (var i=1, _i=keys.length, y; i<_i; i++) {
+            millis = keys[i];
+            
+            value = chartData.getData(millis, keys[i +1]);
+            
+            if (!value) {
+                continue;
+            }
+            
+            path.moveTo(Math.round((Number(millis) - start) / tpp), y);
+            path.v(y = Math.round((value - min) * yRatio));
+        }
+        
+        path.draw();
+    }
+}
+
 		</script>
 	</head>
 	
@@ -641,8 +681,8 @@ function initialize(chartData, start, end, max, color, onValueToString, detail) 
 		<script src="/js/object.js"></script>
 		<script>
 		
-var svgNS = "http://www.w3.org/2000/svg",
-	xlinkNS = "http://www.w3.org/1999/xlink",
+var 
+    xlinkNS = "http://www.w3.org/1999/xlink",
 	MONTH_NAME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 	MIN_AXIS_VSPACE = 50,
 	MIN_AXIS_HSPACE = 100,

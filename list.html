@@ -146,7 +146,7 @@ label {
 #list> ul {
 	border-bottom: 1px solid #c1c3d1;
 	padding: 0.5em;
-	cursor: pointer;
+	/*cursor: pointer;*/
 }
 
 #list> ul >li:first-child {
@@ -296,12 +296,12 @@ function reload() {
 }
 
 function onEdit() {
-	switch(window.node[window.selectedID].type) {
-	case "application": top.showDialog.call(window, "/app_dialog.html", window.selectedID);
+	switch(window.nodeData[window.selectedID].type) {
+	case "application": top.showDialog.call(window, "/dialog/app.html", window.selectedID);
 		break;
-	case "group": top.showDialog.call(window, "/group_dialog.html", window.selectedID);
+	case "group": top.showDialog.call(window, "/dialog/group.html", window.selectedID);
 		break;
-	default: top.showDialog.call(window, "/device_dialog.html", window.selectedID);
+	default: top.showDialog.call(window, "/dialog/device.html", window.selectedID);
 	}
 }
 
@@ -312,8 +312,8 @@ function onShowStatus() {
 }
 
 function initialize() {
-	if ("custom" in top.setting) {
-		var customs = top.setting.custom;
+	if ("custom" in window.settingData) {
+		var customs = window.settingData.custom;
 		
 		if (customs) {
 			let df = document.createDocumentFragment();
@@ -330,10 +330,10 @@ function initialize() {
 	
 	const
 		df = document.createDocumentFragment(),
-		ipList = Object.keys(window.node).sort(function (a, b) {
+		ipList = Object.keys(window.nodeData).sort(function (a, b) {
 			const
-				ipA = window.node[a].ip,
-				ipB = window.node[b].ip;
+				ipA = window.nodeData[a].ip,
+				ipB = window.nodeData[b].ip;
 			
 			if (ipA && ipB) {
 				return IP2Int(ipA) - IP2Int(ipB);
@@ -349,12 +349,14 @@ function initialize() {
 			}
 		});
 
-	for (let i=0, _i=ipList.length, id, base; i<_i; i++) {
+	for (let i=0, _i=ipList.length, id, row ; i<_i; i++) {
 		id = ipList[i];
 	
-		base = window.node[id];
-		
-		df.appendChild(createRow(id, base));
+        row = createRow(id, window.nodeData[id]);
+
+        if (row) {
+		    df.appendChild(row);
+        }
 	}
 	
 	list.appendChild(df);
@@ -366,39 +368,42 @@ function initialize() {
 	initLabel();
 }
 
-function createRow(id, base) {
+function createRow(id, node) {
 	var
 		row = document.createElement("ul"),
 		type, labels, label;
-	
-	row.appendChild(document.createElement("li")); // N.1
-	
-	row.appendChild(document.createElement("li")).textContent = base.ip || ""; // N.2
-	
-	if (!("type" in base)) {
-		base.type = "unknown";
+        
+    if ("type" in node) {
+        if (window.iconData[node.type].group === "group") {
+            return;
+        }
+    } else {
+		node.type = "unknown";
 	}
 	
+    row.appendChild(document.createElement("li")); // N.1
+	row.appendChild(document.createElement("li")).textContent = node.ip || ""; // N.2
+
 	type = document.createElement("li");
-	type.dataset.type = base.type;
-	type.style.backgroundImage = "url('"+ getIcon(base.type).src +"')";
+	type.dataset.type = node.type;
+	type.style.backgroundImage = "url('"+ window.iconData[node.type].src +"')";
 	
 	row.appendChild(type); // N.3
 	
-	row.appendChild(document.createElement("li")).textContent = base.protocol || ""; // N.4
+	row.appendChild(document.createElement("li")).textContent = node.protocol || ""; // N.4
 	
 	if (window.customs) {
 		window.customs.forEach(function (custom) {
-			row.appendChild(document.createElement("li")).textContent = base.custom && base.custom[custom] || "";
+			row.appendChild(document.createElement("li")).textContent = node.custom && node.custom[custom] || "";
 		});
 	};
 	
-	row.appendChild(document.createElement("li")).textContent = base.name; // N.0
+	row.appendChild(document.createElement("li")).textContent = node.name; // N.0
 
 	row.id = id;
 	
-	if (base.label) {
-		labels = base.label.split(",");
+	if (node.label) {
+		labels = node.label.split(",");
 		
 		for (var i=0, length=labels.length; i<length; i++) {
 			label = labels[i];
@@ -414,11 +419,11 @@ function createRow(id, base) {
 		window.labelMap[""].push(row);
 	}
 	
-	if (base.protocol) {
-		if ("status" in base && !base.status) {
+	if (node.protocol) {
+		if ("status" in node && !node.status) {
 			row.dataset.shutdown = true;
 		}
-		else if ("critical" in base && !base.critical) {
+		else if ("critical" in node && !node.critical) {
 			row.dataset.critical = true;
 		}
 		else {
@@ -428,14 +433,8 @@ function createRow(id, base) {
 	else {
 		row.dataset.disabled = true;
 	}
-	
-	row.onclick = function () {
-		top.store.focus = this.id;
-		
-		top.selectMenu("dashboard");
-	};
-	
-    row.title = id;
+    
+    //row.title = id;
     
 	return row;
 }
@@ -483,22 +482,22 @@ function onSave() {
 		});
 	}
 	
-	let base, label;
+	let node, label;
 
-	for (let id in window.node) {
-		base = window.node[id];
+	for (let id in window.nodeData) {
+		node = window.nodeData[id];
 
-		if (base.label) {
-			label = base.label.split(",")[0];
+		if (node.label) {
+			label = node.label.split(",")[0];
 			
 			if (!(label in baseMap)) {
 				baseMap[label] = [];
 			}
 
-			baseMap[label].push(base);
+			baseMap[label].push(node);
 		}
 		else {
-			etc.push(base);
+			etc.push(node);
 		}
 	}
 	
@@ -511,12 +510,12 @@ function onSave() {
 	baseMap[""] = etc;
 
 	keys.forEach(function (label) {
-		baseMap[label].forEach(function (base) {
-			const columns = [label, base.name, base.type, base.ip];
+		baseMap[label].forEach(function (node) {
+			const columns = [label, node.name, node.type, node.ip];
 
 			if (window.customs) {
 				window.customs.forEach(function (custom) {
-					columns.push("custom" in base? base.custom[custom] || "": "");
+					columns.push("custom" in node? node.custom[custom] || "": "");
 				});
 			}
 
@@ -570,7 +569,7 @@ function forEach(a, f) {
 				</nav>
 				<form>
 					<input type="text" name="keyword" placeholder="IP, Type, Name">
-					<button class="submit"><img src="/img/btn/search.png">찾기</button>
+					<button class="submit"><img src="/img/btn/search_label.png">찾기</button>
 					<button class="reset"><img src="/img/btn/cancel.png">초기화</button>
 				</form>
 			</aside>
@@ -614,7 +613,8 @@ function forEach(a, f) {
 		
 		<div class="bg_loading"></div>
 		
-		<script src="js/ITAhM.js"></script>
+        <script src="js/ITAhM.js"></script>
+        <script src="js/icon.js"></script>
 		<script src="js/object.js"></script>
 		<script>
 
@@ -623,7 +623,9 @@ var
 	label = document.getElementById("label"),
 	list = document.getElementById("list"),
 	selector = document.querySelector(".selector"),
-	icon = document.getElementById("icon"),
+    icon = document.getElementById("icon"),
+    nodeData,
+    iconData = ITAhM.iconData,
 	labelMap = {
 		"": []
 	},
@@ -775,19 +777,22 @@ document.getElementById("sort").onclick = function (e) {
 		document.getElementById("count").textContent = count();
 	}
 
-	window.getIcon = function (type = "unknown") {
-		return "icon" in top.setting && top.setting.icon[type] || top.store.icon[type];
-	};
-
 }) (document.querySelector("form"));
 
 top.postRequest({
 	command: "get",
-	target: "node"
+	target: ["node", "icon", "setting"]
 }, function () {
 	switch (this.status) {
 	case 200:
-		window.node = JSON.parse(this.responseText);
+        const target = JSON.parse(this.responseText);
+
+        window.nodeData = target.node;
+        window.settingData = target.setting;
+        
+        for (type in target.icon) {
+            window.iconData[type] = target.icon[type];
+        }
 
 		initialize();
 

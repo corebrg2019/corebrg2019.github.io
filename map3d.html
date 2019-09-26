@@ -41,8 +41,8 @@ function start() {
 }
 
 function display() {
-    if ("display" in parent.setting) {
-	    document.body.classList[parent.setting.display == "name"? "add": "remove"]("name");
+    if ("display" in parent.settingData) {
+	    document.body.classList[parent.settingData.display == "name"? "add": "remove"]("name");
     }
 }
 
@@ -92,21 +92,17 @@ function addNode(id, pos) {
     return mesh;
 }
 
-function drawLine(id, line) {
-    const
-        ar = id.split("."),
-        id1 = "node."+ ar[1],
-        id2 = "node."+ ar[2];
-
-	if (!(id1 in nodeMap) && !(id2 in nodeMap)) {
+/** public **/
+function drawPath(nodeFrom, nodeTo, option) {
+	if (!(nodeFrom in nodeMap) && !(nodeTo in nodeMap)) {
 		return;
 	}
     
     var
-        pos1 = parent.posData[id1],
-        pos2 = parent.posData[id2];
+        pos1 = parent.posData[nodeFrom],
+        pos2 = parent.posData[nodeTo];
 
-    if (!(id1 in nodeMap)) {
+    if (!(nodeFrom in nodeMap)) {
         const id = parent.findParentFromStage(pos1.parent);
 
         if (id) {
@@ -120,7 +116,7 @@ function drawLine(id, line) {
         }
     }
 
-    if (!(id2 in nodeMap)) {
+    if (!(nodeTo in nodeMap)) {
         const id = parent.findParentFromStage(pos2.parent);
 
         if (id) {
@@ -159,16 +155,6 @@ function drawLine(id, line) {
     link.position.lerp(v2, 0.5);
 
     scene.add(link);
-
-    if (Array.isArray(line[id1])) {
-        for (let i=1, _i=line[id1].length, clone; i<_i; i++) {
-            clone = link.clone();
-
-            clone.position.y += i * LINE_RADIUS *2;
-
-            scene.add(clone);
-        }
-    }
 }
 
 function setNode(id, status) {
@@ -356,8 +342,7 @@ function skyView() {
 }
 
 function getMesh(type = "unknown") {
-    const
-        icon = top.setting.icon && top.setting.icon[type] || top.store.icon[type];
+    const icon = parent.iconData[type];
     var mesh, height, mat;
 
     if (icon.texture) {
