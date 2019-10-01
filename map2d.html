@@ -33,9 +33,14 @@ text::selection {
 text {
 	font-family: tahoma, arial, "맑은 고딕";
 	text-anchor: middle;
+    fill: #fff;
 }
 
-.device text {
+#path text {
+    fill: #fcba30;
+}
+
+.node text {
 	font-size: 10px;
 	fill: #fff;
 }
@@ -81,35 +86,40 @@ text {
 	stroke: #0f0;
 }
 
-#device text {
+#path tspan {
+    cursor: pointer;
+}
+
+#node text {
 	font-size: 12px;
+    dominant-baseline: hanging;
 }
 
 body.loading g {
 	display: none;
 }
 
-.device * {
+.node * {
 	pointer-events: none;
 }
 
-.device circle {
+.node circle {
 	pointer-events: all;
 	stroke-width: 5px;
 	stroke: none;
 	fill: none;
 }
 
-.device.group circle {
+.node.group circle {
 	fill: #400080;
 }
 
-.device.critical circle {
+.node.critical circle {
 	stroke: #fa0;
 	animation: status 2s infinite;
 }
 
-.device.shutdown circle {
+.node.shutdown circle {
 	stroke: #f00;
 	animation: status 2s infinite;
 }
@@ -127,8 +137,8 @@ body:not(.submap) .parent {
 	pointer-events: none;
 }
 
-body.name tspan:last-child,
-body:not(.name) tspan:first-child {
+body.name #node tspan:last-child,
+body:not(.name) #node tspan:first-child {
 	display: none;
 }
 
@@ -246,7 +256,7 @@ function onDragMove(e) {
 	moveMap(window.pos.x + drag.dragX / window.scale, window.pos.y + drag.dragY / window.scale);
 }
 
-function parse(node) {
+function createNodeTitle(node) {
 	const title = [];
     
 	if (node.ip) {
@@ -311,13 +321,13 @@ function parse(node) {
 }
 
 function onMouseOver(e) {
-	var svg = this.querySelector("title");
+	var svgTitle = this.querySelector("title");
 
-	if (svg) {
-		this.removeChild(svg);
+	if (!svgTitle) {
+        svgTitle = document.createElementNS(SVG_NS, "title");
+        
+        this.querySelector("image").appendChild(svgTitle);
 	}
-
-	svg = this;
 
 	top.postRequest({
         command: "get",
@@ -327,15 +337,12 @@ function onMouseOver(e) {
 	}, function () {
 		switch (this.status) {
 		case 200:
-			const title = parse(JSON.parse(this.responseText));
+			const title = createNodeTitle(JSON.parse(this.responseText));
 
-			if (title) {
-				const svgTitle = document.createElementNS(SVG_NS, "title");
-				
+			if (title) {	
 				svgTitle.textContent = title;
-
-				svg.appendChild(svgTitle);
-			}
+            }
+            
 			break;
 		default:
 			console.log(top.getMessage(this.status));
@@ -343,6 +350,15 @@ function onMouseOver(e) {
 			console.log(this.responseText && JSON.parse(this.responseText).error);
 		}
 	});
+}
+
+function onSelectInterface(e) {
+    window.sessionStorage.setItem("previous", "/dashboard.html");
+    window.sessionStorage.setItem("node_id", this.dataset.id);
+    window.sessionStorage.setItem("index", this.dataset.index);
+    window.sessionStorage.setItem("chart", "/chart/throughput.html");
+    
+    parent.location.href = "/chart/chart.html";
 }
 
 function addNode(id, pos) {
@@ -397,16 +413,15 @@ function addNode(id, pos) {
 	svgLabel.appendChild(svgAddr);
 	
 	svgLabel.setAttribute("x", 0);
-	svgLabel.setAttribute("y", window.OFFSET_C + 16);
-	// text baseline이 글자의 밑을 기준으로 하므로 글자 크기만큼 내려준다.
+	svgLabel.setAttribute("y", window.OFFSET_C);
 	
 	svgDevice.appendChild(svgBG);
 	svgDevice.appendChild(svgIcon);
 	svgDevice.appendChild(svgLabel);
 	
-	addClass(svgDevice, "device");
+	addClass(svgDevice, "node");
 	
-	window.deviceCanvas.appendChild(svgDevice);
+	window.nodeCanvas.appendChild(svgDevice);
 	
 	window.nodeSVGMap[id] = svgDevice;
     
@@ -517,7 +532,11 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
         y = posTo.y - posFrom.y;
 	
 	addClass(container, "path");
-	
+    
+    window.pathCanvas.appendChild(container);
+
+    container.setAttribute("transform", "translate("+ posFrom.x +","+ posFrom.y +")");
+
 	path.setAttribute("x1", 0);
 	path.setAttribute("y1", 0);
 
@@ -534,17 +553,79 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
             path.setAttribute("points", "0,0 "+ x +", "+ y);
 
             if (linkArray) {
+                const
+                    labelFrom = [],
+                    labelTo = [];
                 let
-                    text = document.createElementNS(SVG_NS, "text"),
-                    link;
-
-                container.appendChild(text);
+                    text, link;
 
                 linkArray.forEach(id => {
                     link = parent.linkData[id];
 
-                    console.log(link);
+                    if (link.indexFrom) {
+                        labelFrom.push({
+                            index: link.indexFrom,
+                            name: link.indexFromName
+                        });
+                    }
+                    
+                    if (link.indexTo) {
+                        labelTo.push({
+                            index: link.indexTo,
+                            name: link.indexToName
+                        });
+                    }
                 });
+
+                if (labelFrom.length > 0) {
+                    let tspan;
+
+                    text = document.createElementNS(SVG_NS, "text");
+
+                    container.appendChild(text);
+
+                    text.setAttribute("x", x /4);
+                    text.setAttribute("y", y /4);
+                    
+                    labelFrom.forEach(label => {
+                        tspan = document.createElementNS(SVG_NS, "tspan");
+
+                        tspan.textContent = " "+ label.name +" ";
+                        tspan.dataset.id = nodeFrom;
+                        tspan.dataset.index = label.index;
+
+                        tspan.onclick = onSelectInterface;
+
+                        text.appendChild(tspan);
+
+                        //console.log(tspan.getBBox());
+                    });
+                }
+
+                if (labelTo.length > 0) {
+                    let tspan;
+
+                    text = document.createElementNS(SVG_NS, "text");
+
+                    container.appendChild(text);
+
+                    text.setAttribute("x", x *3/4);
+                    text.setAttribute("y", y *3/4);
+                    
+                    labelTo.forEach(label => {
+                        tspan = document.createElementNS(SVG_NS, "tspan");
+
+                        tspan.textContent = " "+ label.name +" ";
+                        tspan.dataset.id = nodeTo;
+                        tspan.dataset.index = label.index;
+
+                        tspan.onclick = onSelectInterface;
+
+                        text.appendChild(tspan);
+
+                        //console.log(tspan.getBBox());
+                    });
+                }
             }
     }
 
@@ -552,10 +633,6 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
     path.setAttribute("stroke-width", option.size || parent.settingData["linkSize"] || 1);
 
     container.appendChild(path);
-
-    container.setAttribute("transform", "translate("+ posFrom.x +","+ posFrom.y +")");
-
-    window.pathCanvas.appendChild(container);
 }
 
 function lookAt (pos) {
@@ -608,7 +685,7 @@ function display() {
             </defs>
             <g id="transform" transform="translate(0, 0) scale(1, 1) translate(0, 0)">
                 <g id="path"></g>
-                <g id="device"></g>
+                <g id="node"></g>
             </g>
         </svg>
 
@@ -635,7 +712,7 @@ var
 
 var 
     mapCanvas = document.getElementById("map"),
-    deviceCanvas = document.getElementById("device"),
+    nodeCanvas = document.getElementById("node"),
 	pathCanvas = document.getElementById("path"),
 	transform = document.getElementById("transform").transform.baseVal,
     parentAnchor = document.querySelector("g.parent"),

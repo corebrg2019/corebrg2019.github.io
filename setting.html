@@ -227,9 +227,6 @@ function createItem(src, key, data, func) {
 				전일 디스크 사용량 : <span id="usage"></span>
 			</p>
 			<p>
-				데이터베이스 로드 : <span id="load">N/A</span>
-			</p>
-			<p>
 				관리 리소스 갯수 : <span id="resource"></span>
 			</p>
 			<p id="expire"></p>
@@ -465,8 +462,8 @@ if (top.account.level > 0) {
 
 				document.getElementById("java").textContent = information.java;
 				document.getElementById("version").textContent = information.version;
-				//document.getElementById("resource").textContent = information.resource;
-				//document.getElementById("usage").textContent = ITAhM.util.toBytesString(information.usage);
+				document.getElementById("resource").textContent = information.resource;
+				document.getElementById("usage").textContent = ITAhM.util.toBytesString(information.usage);
 				document.getElementById("space").textContent = ITAhM.util.toBytesString(information.space);
 				document.getElementById("path").textContent = information.path;
 				document.getElementById("expire").textContent

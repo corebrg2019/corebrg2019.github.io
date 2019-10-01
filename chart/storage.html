@@ -9,6 +9,7 @@
 		<style>
 		
 @import "/css/itahm.css";
+@import "/css/glyphicon.css";
 
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
@@ -36,8 +37,20 @@ h2 {
     text-shadow: 0 2px 3px #000;
 }
 
-#legend {
-	text-align: right;
+.legend {
+    line-height: 2em;
+    display: flex;
+    justify-content: space-between;
+}
+
+.legend .critical input,
+.legend .critical span  {
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#max::before {
+    content: "스토리지 용량 : ";
 }
 
 div.realtime {
@@ -61,7 +74,63 @@ body:not(.realtime) div.realtime {
     position: absolute; top: 0; right: 0; bottom: 0; left: 0;
 }
 
-		</style>
+/*button glyphicon*/
+.glyph {
+    display: inline-block;
+    color: #fff;
+    vertical-align: middle;
+    position: relative;
+    cursor: pointer;
+}
+
+.glyph.apply {
+    width: 7em;
+}
+
+.glyph::before,
+.glyph::after {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+}
+
+.glyph::before {
+    font-family: "Glyphicons Halflings";
+    background: rgba(0,0,0,0.15);
+    top: 0; bottom: 0; left: 0; width: 3em;
+}
+
+.glyph::after {
+    top: 0; right: 0; bottom: 0; left: 3em;
+}
+
+.glyph.apply::after {
+    content: "적용";
+}
+
+.glyph.apply {
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+}
+
+.glyph.apply:hover,
+.glyph.apply:focus {
+    background-color: #47a447;
+    border-color: #398439;
+}
+
+.glyph:active {
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.125);
+}
+
+.glyph.apply::before {
+    content: "\e013";
+}
+
+        </style>
+        
+        <script src="/js/snmp.js"></script>
 		<script>
 function ChartData() {
     this.initialize(arguments);
@@ -321,7 +390,15 @@ function toString(value) {
 
 		<header>
 			<h2><i>"</i> <span id="storage_name"></span> <i>"</i></h2>
-			<div id="legend">max</div>
+			<div class="legend">
+                <form class="critical" title="임계 설정 해제시 0 입력">
+                    <span>임계 설정</span>
+                    <input id="limit" type="number" min="0" max="100" required>
+                    <span>%</span>
+                    <span class="glyph apply"></span>
+                </form>
+                <div id="max"></div>
+            </div>
 		</header>
 		<div style="position: relative;">
             <iframe id="chart"></iframe>
@@ -347,6 +424,38 @@ document.getElementById("realtime").onload = function (e) {
             file: "chart_storage_realtime.csv"
         });
     }
+};
+
+document.querySelector("form.critical").onsubmit = 
+document.querySelector(".apply").onclick = function (e) {
+    e.preventDefault();
+
+    const thread = new Worker("/js/post_request.js");
+
+    thread.onmessage = e => {
+        switch (e.data.status) {
+            case 200:
+                alert("Information.\n\n임계를 설정했습니다.");
+
+            break;
+
+            default:
+                alert("Error!\n\n오류 코드 "+ e.data.status);
+
+                console.log(e.data.textResponse && JSON.parse(e.data.textResponse).error);
+        }
+
+        thread.terminate();
+    };
+
+    thread.postMessage([window.localStorage.getItem("agent"), {
+        command: "set",
+        target: "critical",
+        id: Number(window.sessionStorage.getItem("node_id")),
+        index: window.sessionStorage.getItem("index"),
+        oid: ITAhM.snmp.oid.hrStorageUsed,
+        limit: Number(document.getElementById("limit").value || "0")
+    }]);
 };
 
 (chartFrame => {
@@ -428,6 +537,35 @@ document.getElementById("realtime").onload = function (e) {
         });
     }
 
+    function initCritical() {
+        const thread = new Worker("/js/post_request.js");
+        
+        thread.onmessage = e => {
+            switch (e.data.status) {
+                case 200:
+                    document.getElementById("limit").value = JSON.parse(e.data.responseText).limit;
+                    
+                    initialize();
+
+                    break;
+                default:
+                    alert("Error!\n\n오류 코드 "+ e.data.status);
+
+                    console.log(e.data.textResponse && JSON.parse(e.data.textResponse).error);
+            }
+
+            thread.terminate();
+        };
+
+        thread.postMessage([window.localStorage.getItem("agent"), {
+            command: "get",
+            target: "critical",
+            id: Number(window.sessionStorage.getItem("node_id")),
+            index: window.sessionStorage.getItem("index"),
+            oid: ITAhM.snmp.oid.hrStorageUsed
+        }]);
+    }
+
     top.postRequest({
         command: "get",
         target: "node",
@@ -452,9 +590,9 @@ document.getElementById("realtime").onload = function (e) {
                     window.max = units * size;
 
                     document.getElementById("storage_name").textContent = name || "Storage";
-                    document.getElementById("legend").textContent = "Storage capacity : "+ ITAhM.util.toBytesString(window.max);
+                    document.getElementById("max").textContent = ITAhM.util.toBytesString(window.max);
 
-                    initialize();
+                    initCritical();
 
                     return true;
                 })(nodeData.resource[index]["1.3.6.1.2.1.25.2.3.1.4"],

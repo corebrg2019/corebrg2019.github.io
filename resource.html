@@ -75,8 +75,7 @@ section.throughput {
     outline: none;
 }
 
-/* hr_processor_load*/
-section.hr_processor_load::after {
+section.status::after {
 	content: "";
 	position: absolute; top: 1em; left: 1em;
 	display: inline-block;
@@ -85,9 +84,11 @@ section.hr_processor_load::after {
 	background-color: #0f0;
 }
 
-section.hr_processor_load.critical::after {
+section.status.critical::after {
 	background-color: #ffa500;
 }
+
+/* hr_processor_load*/
 
 .processor.container {
     height: 120px;
@@ -202,19 +203,6 @@ ul {
 }
 
 /*memory*/
-section.hr_storage_memory::after {
-	content: "";
-	position: absolute; top: 1em; left: 1em;
-	display: inline-block;
-	width: 1em; height: 1em;
-	border-radius: 50%;
-	background-color: #0f0;
-}
-
-section.hr_storage_memory.critical::after {
-	background-color: #ffa500;
-}
-
 .memory.container {
     display: flex;
 }
@@ -735,6 +723,7 @@ function createStorageItem(index, label) {
 	item.children[1].textContent = label;
 
     window.storageIndexObj[index] = {
+        item: item,
         used: item.children[3],
         size: item.children[2],
         gauge: item.children[4],
@@ -748,6 +737,7 @@ function createIFaceItem(index, name, descr, alias, type) {
 	const item = iFaceItem.cloneNode(true);
 
     window.throughputIndexObj[index] = {
+        item: item,
         speed: item.children[4],
         in: item.children[5],
         inGauge: item.children[6],
@@ -757,8 +747,12 @@ function createIFaceItem(index, name, descr, alias, type) {
     }
 	
     item.children[1].textContent = name || descr || alias;
-	item.children[2].textContent = alias;
+	item.children[2].textContent = descr || alias;
 	item.children[3].textContent = type + "("+ ITAhM.snmp.ifType[type] +")";
+
+    if (alias) {
+        item.title = alias;
+    }
 
 	return item;
 }
@@ -827,10 +821,10 @@ function initialize(node) {
             , indexData["1.3.6.1.2.1.25.2.3.1.3"]);
         
         // 인터페이스
-        (function(descr, type, speed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
-            if (inOcts && outOcts && speed && inErrs && outErrs && aStatus && oStatus) {
+        (function(descr, type, bandwidth, speed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
+            if (inOcts && outOcts && (bandwidth || speed) && inErrs && outErrs && aStatus && oStatus) {
                 const data = {
-                        speed: Number(speed),
+                        speed: bandwidth && Number(bandwidth) || Number(speed),
                         inOcts: Number(inOcts),
                         outOcts: Number(outOcts),
                         inErrs: Number(inErrs),
@@ -846,6 +840,7 @@ function initialize(node) {
             }
         })(indexData["1.3.6.1.2.1.2.2.1.2"]
             , indexData["1.3.6.1.2.1.2.2.1.3"]
+            , indexData[ITAhM.snmp.oid.bandwidth]
             , indexData["1.3.6.1.2.1.2.2.1.5"]
             , indexData["1.3.6.1.2.1.2.2.1.7"]
             , indexData["1.3.6.1.2.1.2.2.1.8"]
@@ -871,31 +866,42 @@ function initialize(node) {
 	if (!("status" in node) || !node.status) {
 		document.body.classList.add("shutdown");
 	}
-	else {
-		
-	}
 	
     if (hrProcessorLoad.length > 0) {
         const
             max = Math.max.apply(undefined, hrProcessorLoad),
             min = Math.min.apply(undefined, hrProcessorLoad),
             sum = hrProcessorLoad.reduce((a, b) => Number(a)+ Number(b)),
-            avg = sum / hrProcessorLoad.length;
+            avg = sum / hrProcessorLoad.length,
+            section = document.querySelector("section.hr_processor_load");
         
-        setProcessor(min, avg, max);
+        setProcessor(min, avg, max, node.critical["0"] && node.critical["0"]["1.3.6.1.2.1.25.3.3.1.2"]);
         
-        document.querySelector("section.hr_processor_load").onclick = onSelectResource.bind(undefined, "/chart/processor.html", "0");
+        section.onclick = onSelectResource.bind(undefined, "/chart/processor.html", "0");
 
         document.body.classList.add("hr_processor_load");
     }
 
     if (Object.keys(hrStorageMemory).length > 0) {
         for (let index in hrStorageMemory) {
-            const indexData = hrStorageMemory[index];
+            const
+                indexData = hrStorageMemory[index],
+                section = document.querySelector("section.hr_storage_memory");
 
-            window.requestAnimationFrame(setMemory.bind(window, indexData.used, indexData.size, indexData.units));
+            window.requestAnimationFrame(setMemory.bind(window,
+                indexData.used,
+                indexData.size,
+                indexData.units,
+                node.critical[index] &&
+                node.critical[index]["1.3.6.1.2.1.25.2.3.1.6"]));
 
-            document.querySelector("section.hr_storage_memory").onclick = onSelectResource.bind(window, "/chart/memory.html", index);
+            section.onclick = onSelectResource.bind(window, "/chart/memory.html", index);
+
+            try {
+                if ([index]) {
+                    section.classList.add("critical");
+                }
+            } catch (e) {}
 
             break;
         }
@@ -912,15 +918,16 @@ function initialize(node) {
             item = window.storageArea.appendChild(
                 createStorageItem(index, indexData.descr));
 
-            window.requestAnimationFrame(setStorage.bind(window, index, indexData.used, indexData.size, indexData.units));
+            window.requestAnimationFrame(setStorage.bind(window,
+                index,
+                indexData.used,
+                indexData.size,
+                indexData.units,
+                node.critical[index] &&
+                node.critical[index]["1.3.6.1.2.1.25.2.3.1.6"]));
 
             item.onclick = onSelectResource.bind(window, "/chart/storage.html", index);
-            /*
-            if ("status" in indexData && !indexData.status) {
-                item.classList.add("critical");
-            }
-            */
-
+            
             document.body.classList.add("hr_storage_used");
         }
     }
@@ -951,7 +958,12 @@ function initialize(node) {
                 indexData.speed,
                 indexData.inOcts,
                 indexData.outOcts,
-                Math.max(indexData.inErrs, indexData.outErrs)));
+                Math.max(indexData.inErrs, indexData.outErrs)),
+                node.critical[index] &&
+                (node.critical[index]["1.3.6.1.4.1.49447.3.1"] ||
+                node.critical[index]["1.3.6.1.4.1.49447.3.2"] ||
+                node.critical[index]["1.3.6.1.4.1.49447.3.3"] ||
+                node.critical[index]["1.3.6.1.4.1.49447.3.4"]));
                 
             if (indexData.speed > 0) {
                 item.onclick = onSelectResource.bind(window, "/chart/throughput.html", index);
@@ -975,7 +987,7 @@ function initialize(node) {
 	document.body.classList.remove("loading");
 }
 
-function setProcessor(min, avg, max) {
+function setProcessor(min, avg, max, critical) {
     const
         maxItem = document.querySelector(".processor.item.max"),
         avgItem = document.querySelector(".processor.item.avg"),
@@ -989,9 +1001,10 @@ function setProcessor(min, avg, max) {
     avgItem.querySelector(".mask").style.transform = "rotate(calc(180deg * "+ (avg /100) +"))";
     minItem.querySelector(".mask").style.transform = "rotate(calc(180deg * "+ (min /100) +"))";
 
+    document.querySelector("section.hr_processor_load").classList[critical? "add": "remove"]("critical");
 }
 
-function setMemory(used, size, units) {
+function setMemory(used, size, units, critical) {
     // style에서 ::before ::after의 height와 fill의 padding-top의 값이 padding과 같아야 한다.
     // height 는 cylinder의 높이와 같아야 한다. font-size * em = height
 
@@ -1032,9 +1045,11 @@ function setMemory(used, size, units) {
     gauge.dataset.rate = rate +"%";
     gauge.dataset.size = ITAhM.util.toBytesString(size * units);
     document.querySelector(".memory.used").textContent = ITAhM.util.toBytesString(used * units);
+
+    document.querySelector("section.hr_storage_memory").classList[critical? "add": "remove"]("critical");
 }
 
-function setStorage(index, used, size, units) {
+function setStorage(index, used, size, units, critical) {
     const
         obj = window.storageIndexObj[index],
         rate = used *100 / size;
@@ -1043,9 +1058,11 @@ function setStorage(index, used, size, units) {
     obj.used.textContent = ITAhM.util.toBytesString(used * units);
     obj.gauge.dataset.rate = rate.toFixed(2) +"%";
     obj.mask.style.left = rate +"%";
+
+    obj.item.classList[critical? "add": "remove"]("critical");
 }
 
-function setThroughput(index, speed, inOcts, outOcts, errors) {
+function setThroughput(index, speed, inOcts, outOcts, errors, critical) {
     const
         obj = window.throughputIndexObj[index];
 
@@ -1069,6 +1086,8 @@ function setThroughput(index, speed, inOcts, outOcts, errors) {
     }
     
     obj.err.textContent = errors;
+
+    obj.item.classList[critical? "add": "remove"]("critical");
 }
 
 function refresh() {
@@ -1080,7 +1099,11 @@ function refresh() {
     }]);
 }
 
-function update(resourceData) {
+function update(node) {
+    const
+        resourceData = node.resource,
+        criticalData = node.critical;
+
     if (!resourceData) {
         return;
     }
@@ -1091,26 +1114,40 @@ function update(resourceData) {
         document.getElementById("frame_response").contentWindow.draw(window.realtimeObj);
 
         document.getElementById("response").textContent = window.realtimeObj.data.last +"ms";
+
+        document.querySelector("section.response_time")
+            .classList[criticalData["0"] && criticalData["0"]["1.3.6.1.4.1.49447.1"]? "add": "remove"]("critical");
     } catch (e) {}
 
     if (window.processorIndexArray.length > 0) {
         try {
+
+        } catch (e) {}
+        
+        try {
             const load = [];
 
-            window. processorIndexArray.forEach (index => load.push(Number(resourceData[index]["1.3.6.1.2.1.25.3.3.1.2"])));
+            window.processorIndexArray.forEach (index => load.push(Number(resourceData[index]["1.3.6.1.2.1.25.3.3.1.2"])));
 
-            setProcessor(Math.min.apply(undefined, load), load.reduce((a, b) => a +b) / load.length, Math.max.apply(undefined, load));
+            setProcessor(Math.min.apply(undefined, load),
+                load.reduce((a, b) => a +b) / load.length,
+                Math.max.apply(undefined, load),
+                criticalData["0"] &&
+                criticalData["0"]["1.3.6.1.2.1.25.3.3.1.2"]);
         } catch (e) {}
     }
 
     if (window.memoryIndexArray.length > 0) {
         try {
-            const indexData = resourceData[window.memoryIndexArray[0]];
+            const
+                index = window.memoryIndexArray[0],
+                indexData = resourceData[index];
             
             setMemory(
                 Number(indexData["1.3.6.1.2.1.25.2.3.1.6"]), // used
                 Number(indexData["1.3.6.1.2.1.25.2.3.1.5"]), // size
-                Number(indexData["1.3.6.1.2.1.25.2.3.1.4"])); // units
+                Number(indexData["1.3.6.1.2.1.25.2.3.1.4"]), // units
+                criticalData[index] && criticalData[index]["1.3.6.1.2.1.25.2.3.1.6"]);
         } catch (e) {}
     }
 
@@ -1124,7 +1161,8 @@ function update(resourceData) {
                 setStorage(index,
                     Number(indexData["1.3.6.1.2.1.25.2.3.1.6"]), // used
                     Number(indexData["1.3.6.1.2.1.25.2.3.1.5"]), // size
-                    Number(indexData["1.3.6.1.2.1.25.2.3.1.4"])); //units
+                    Number(indexData["1.3.6.1.2.1.25.2.3.1.4"]), //units
+                    criticalData[index] && criticalData[index]["1.3.6.1.2.1.25.2.3.1.6"]); 
             }
         } catch (e) {}
     }
@@ -1137,10 +1175,16 @@ function update(resourceData) {
                 indexData = resourceData[index];
 
                 setThroughput(index,
+                    indexData[ITAhM.snmp.oid.bandwidth] && Number(indexData[ITAhM.snmp.oid.bandwidth]) ||
                     Number(indexData["1.3.6.1.2.1.2.2.1.5"]), // speed
                     Number(indexData["1.3.6.1.4.1.49447.3.1"]), // in
                     Number(indexData["1.3.6.1.4.1.49447.3.2"]), // out
-                    Math.max(Number(indexData["1.3.6.1.4.1.49447.3.3"]), Number(indexData["1.3.6.1.4.1.49447.3.4"]))); //err
+                    Math.max(Number(indexData["1.3.6.1.4.1.49447.3.3"]), Number(indexData["1.3.6.1.4.1.49447.3.4"])), //err
+                    criticalData[index] &&
+                    (criticalData[index]["1.3.6.1.4.1.49447.3.1"] ||
+                    criticalData[index]["1.3.6.1.4.1.49447.3.2"] ||
+                    criticalData[index]["1.3.6.1.4.1.49447.3.3"] ||
+                    criticalData[index]["1.3.6.1.4.1.49447.3.4"]));
             }
         } catch (e) {console.error(e)}
     }
@@ -1149,7 +1193,7 @@ function update(resourceData) {
 function onUpdate(e) {
     switch (e.data.status) {
         case 200:
-            update(JSON.parse(e.data.responseText).resource);
+            update(JSON.parse(e.data.responseText));
 
             break;
     }
@@ -1256,7 +1300,7 @@ function setDraggable() {
 				</table>
 			</section>
 			
-			<section class="hr_processor_load resource selectable">
+			<section class="hr_processor_load resource status selectable">
 				<h2>프로세서 로드</h2>
 				<div class="processor container">
                     <div class="processor item min">
@@ -1290,7 +1334,7 @@ function setDraggable() {
 				</div>
 			</section>
 			
-			<section class="hr_storage_memory resource selectable">
+			<section class="hr_storage_memory resource status selectable">
 				<h2>물리적 메모리</h2>
 				<div class="memory container">
                     <div class="memory gauge">
@@ -1305,8 +1349,8 @@ function setDraggable() {
 				</div>
 			</section>
 			
-			<section class="response_time resource selectable">
-                <h2>응답 속도</h2>
+			<section class="response_time resource status selectable">
+                <h2>응답 시간</h2>
                 <div class="response container">
                     <div class="response time">
                         <div class="response circle">
@@ -1434,8 +1478,6 @@ if (window.sessionStorage.getItem("node_id")) {
 	}, function () {
 		switch (this.status) {
 			case 200:
-                window.sessionStorage.setItem("node_data", this.responseText);
-
 				window.node = JSON.parse(this.responseText);
                     
                 initialize(window.node);

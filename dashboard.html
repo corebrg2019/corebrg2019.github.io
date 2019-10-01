@@ -679,12 +679,12 @@ function findParentFromStage(parent) {
             sCount = 0,
             cCount = 0,
             nCount = 0,
-            base, pos, parent, status;
+            node, pos, parent, status;
             
         for (let id in window.nodeData) {
-            base = window.nodeData[id];
+            node = window.nodeData[id];
             pos = window.posData[id];
-
+            
             // 동기화 안된 node의 pos 정보가 없음
             if (!pos) {
                 window.posData[id] = pos = {
@@ -701,59 +701,59 @@ function findParentFromStage(parent) {
             if (pos.parent === window.upper) {
                 window.mapList.push(id);
 
-                if ("protocol" in base) {
+                if ("protocol" in node) {
                     window.nodeList.push(id);
 
-                    if ("status" in base && !base.status) {
+                    if ("status" in node && !node.status) {
                         status = "shutdown";
                         
                         window.shutdownList.push(id);
 
                         sCount++;
 
-                        parseLabel(base.label, "shutdown");
+                        parseLabel(node.label, "shutdown");
                     }
-                    else if ("critical" in base && !base.critical) {
+                    else if ("critical" in node && node.critical) {
                         status = "critical";
                         
                         window.criticalList.push(id);
 
                         cCount++;
                         
-                        parseLabel(base.label, "critical");
+                        parseLabel(node.label, "critical");
                     }
                     else {
                         status = "normal";
 
                         nCount++;
 
-                        parseLabel(base.label, "normal");
+                        parseLabel(node.label, "normal");
                     }
                 }
             }
             else if (parent = findParentFromStage(pos.parent)) {
                 // 하위
-                if ("protocol" in base) {
+                if ("protocol" in node) {
                     window.nodeList.push(id);
 
-                    if ("status" in base && !base.status) {
+                    if ("status" in node && !node.status) {
                         window.shutdownList.push(parent);
 
                         sCount++;
                         
-                        parseLabel(base.label, "shutdown");
+                        parseLabel(node.label, "shutdown");
                     }
-                    else if ("critical" in base && !base.critical) {
+                    else if ("critical" in node && node.critical) {
                         window.criticalList.push(parent);
 
                         cCount++;
                         
-                        parseLabel(base.label, "critical");
+                        parseLabel(node.label, "critical");
                     }
                     else {
                         nCount++;
                         
-                        parseLabel(base.label, "normal");
+                        parseLabel(node.label, "normal");
                     }
                 }
             }

@@ -20,7 +20,8 @@ body {
 h2 {
 	margin: 0; padding: 10px;
 	background-color: #0084ff;
-	color: #fff;
+    color: #fff;
+    text-shadow: 0 2px 3px #000;
 }
 
 h3 {
@@ -211,7 +212,7 @@ body.initialized input[name=create] {
 
 		</style>
 		
-		<script></script>
+		<script src="/js/snmp.js"></script>
 	</head>
 	
 	<body class="loading">
@@ -638,12 +639,15 @@ document.getElementById("close").onclick = close;
             for (let index in window.nodeFrom.resource) {
                 indexData = window.nodeFrom.resource[index];
 
-                if ("1.3.6.1.2.1.2.2.1.7" in indexData && indexData["1.3.6.1.2.1.2.2.1.7"] === "1") {
+                if (ITAhM.snmp.oid.ifAdminStatus in indexData &&
+                    indexData[ITAhM.snmp.oid.ifAdminStatus] === "1" &&
+                    indexData[ITAhM.snmp.oid.ifSpeed] &&
+                    Number(indexData[ITAhM.snmp.oid.ifSpeed]) > 0) {
                     option = document.createElement("option");
 
                     option.value = index;
-                    option.text = indexData["1.3.6.1.2.1.2.2.1.2"];
-                    option.title = indexData["1.3.6.1.2.1.31.1.1.1.1"];
+                    option.text = indexData[ITAhM.snmp.oid.ifName] || indexData[ITAhM.snmp.oid.ifDescr];
+                    option.title = indexData[ITAhM.snmp.oid.ifDescr] || indexData[ITAhM.snmp.oid.ifAlias];
 
                     select.appendChild(option);
                 }
@@ -663,12 +667,15 @@ document.getElementById("close").onclick = close;
             for (let index in window.nodeTo.resource) {
                 indexData = window.nodeTo.resource[index];
 
-                if ("1.3.6.1.2.1.2.2.1.7" in indexData && indexData["1.3.6.1.2.1.2.2.1.7"] === "1") {
+                if (ITAhM.snmp.oid.ifAdminStatus in indexData &&
+                    indexData[ITAhM.snmp.oid.ifAdminStatus] === "1" &&
+                    indexData[ITAhM.snmp.oid.ifSpeed] &&
+                    Number(indexData[ITAhM.snmp.oid.ifSpeed]) > 0) {
                     option = document.createElement("option");
 
                     option.value = index;
-                    option.text = indexData["1.3.6.1.2.1.2.2.1.2"];
-                    option.title = indexData["1.3.6.1.2.1.31.1.1.1.1"];
+                    option.text = indexData[ITAhM.snmp.oid.ifName] || indexData[ITAhM.snmp.oid.ifDescr];
+                    option.title = indexData[ITAhM.snmp.oid.ifDescr] || indexData[ITAhM.snmp.oid.ifAlias];
 
                     select.appendChild(option);
                 }
