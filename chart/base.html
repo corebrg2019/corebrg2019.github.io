@@ -603,7 +603,7 @@ function drawDetail(keys, chartData, min, start, tpp, yRatio) {
     keys.forEach((millis, i) => {
         value = chartData.getData(millis, keys[i +1]);
         
-        if (!value) {
+        if (isNaN(value)) {
             return;
         }
         
