@@ -266,7 +266,6 @@ body.initialized input[name=create] {
                             <td><input type="checkbox" name="use_type"></td>
                             <td>
                                 <select name="type" required disabled>
-                                    <option value="" selected>기본</option>
                                     <option value="clock">꺽은선(시계방향)</option>
                                     <option value="counter">꺽은선(반시계방향)</option>
                                 </select>
@@ -432,7 +431,7 @@ document.getElementById("close").onclick = close;
         }, function () {
             switch(this.status) {
             case 409:                
-                alert("Error!\n\n링크 수정 실패.");
+                alert("Error!\n\n링크 수정 실패.\n"+"이미 다른 노드와 연결된 인터페이스 일 수 있습니다.");
             case 200:
                 opener.location.reload();
 
@@ -491,7 +490,7 @@ document.getElementById("close").onclick = close;
             };
 
         ["type", "color", "size"].forEach(name => {
-            if (form.elements[name].value) {
+            if (form.elements["use_"+ name].checked && form.elements[name].value) {
                 path[name] = form.elements[name].value;
             }
         });
@@ -509,9 +508,6 @@ document.getElementById("close").onclick = close;
 
                 close();
 
-                break;
-            case 204:
-                console.log("?");
                 break;
             default:
                 alert(top.getMessage(this.status));
@@ -548,9 +544,6 @@ document.getElementById("close").onclick = close;
 
                 close();
 
-                break;
-            case 204:
-                console.log("?");
                 break;
             default:
                 alert(top.getMessage(this.status));

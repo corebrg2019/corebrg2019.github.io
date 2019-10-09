@@ -326,7 +326,8 @@ function onMouseOver(e) {
 	if (!svgTitle) {
         svgTitle = document.createElementNS(SVG_NS, "title");
         
-        this.querySelector("image").appendChild(svgTitle);
+        //this.querySelector("image").appendChild(svgTitle);
+        this.appendChild(svgTitle);
 	}
 
 	top.postRequest({
@@ -339,7 +340,7 @@ function onMouseOver(e) {
 		case 200:
 			const title = createNodeTitle(JSON.parse(this.responseText));
 
-			if (title) {	
+			if (title) {
 				svgTitle.textContent = title;
             }
             
@@ -551,84 +552,110 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
             break;
         default:
             path.setAttribute("points", "0,0 "+ x +", "+ y);
-
-            if (linkArray) {
-                const
-                    labelFrom = [],
-                    labelTo = [];
-                let
-                    text, link;
-
-                linkArray.forEach(id => {
-                    link = parent.linkData[id];
-
-                    if (link.indexFrom) {
-                        labelFrom.push({
-                            index: link.indexFrom,
-                            name: link.indexFromName
-                        });
-                    }
-                    
-                    if (link.indexTo) {
-                        labelTo.push({
-                            index: link.indexTo,
-                            name: link.indexToName
-                        });
-                    }
-                });
-
-                if (labelFrom.length > 0) {
-                    let tspan;
-
-                    text = document.createElementNS(SVG_NS, "text");
-
-                    container.appendChild(text);
-
-                    text.setAttribute("x", x /4);
-                    text.setAttribute("y", y /4);
-                    
-                    labelFrom.forEach(label => {
-                        tspan = document.createElementNS(SVG_NS, "tspan");
-
-                        tspan.textContent = " "+ label.name +" ";
-                        tspan.dataset.id = nodeFrom;
-                        tspan.dataset.index = label.index;
-
-                        tspan.onclick = onSelectInterface;
-
-                        text.appendChild(tspan);
-
-                        //console.log(tspan.getBBox());
-                    });
-                }
-
-                if (labelTo.length > 0) {
-                    let tspan;
-
-                    text = document.createElementNS(SVG_NS, "text");
-
-                    container.appendChild(text);
-
-                    text.setAttribute("x", x *3/4);
-                    text.setAttribute("y", y *3/4);
-                    
-                    labelTo.forEach(label => {
-                        tspan = document.createElementNS(SVG_NS, "tspan");
-
-                        tspan.textContent = " "+ label.name +" ";
-                        tspan.dataset.id = nodeTo;
-                        tspan.dataset.index = label.index;
-
-                        tspan.onclick = onSelectInterface;
-
-                        text.appendChild(tspan);
-
-                        //console.log(tspan.getBBox());
-                    });
-                }
-            }
     }
 
+    if (linkArray) {
+        const
+            labelFrom = [],
+            labelTo = [];
+        let
+            text, link;
+
+        linkArray.forEach(id => {
+            link = parent.linkData[id];
+
+            if (link.indexFrom) {
+                labelFrom.push({
+                    index: link.indexFrom,
+                    name: link.indexFromName
+                });
+            }
+            
+            if (link.indexTo) {
+                labelTo.push({
+                    index: link.indexTo,
+                    name: link.indexToName
+                });
+            }
+        });
+
+        if (labelFrom.length > 0) {
+            let tspan;
+
+            text = document.createElementNS(SVG_NS, "text");
+
+            container.appendChild(text);
+
+            switch(option.type) {
+                case "clock":
+                    text.setAttribute("x", x /2);
+                    text.setAttribute("y", 0);
+
+                    break;
+                case "counter":
+                    text.setAttribute("x", 0);
+                    text.setAttribute("y", y /2);
+
+                    break;
+                default:
+                    text.setAttribute("x", x /4);
+                    text.setAttribute("y", y /4);
+            }
+
+            labelFrom.forEach(label => {
+                tspan = document.createElementNS(SVG_NS, "tspan");
+
+                tspan.textContent = " "+ label.name +" ";
+                tspan.dataset.id = nodeFrom;
+                tspan.dataset.index = label.index;
+
+                tspan.onclick = onSelectInterface;
+
+                text.appendChild(tspan);
+
+                //console.log(tspan.getBBox());
+            });
+        }
+
+        if (labelTo.length > 0) {
+            let tspan;
+
+            text = document.createElementNS(SVG_NS, "text");
+
+            container.appendChild(text);
+
+            switch(option.type) {
+                case "clock":
+                    text.setAttribute("x", x);
+                    text.setAttribute("y", y /2);
+
+                    break;
+                case "counter":
+                    text.setAttribute("x", x /2);
+                    text.setAttribute("y", y);
+
+                    break;
+                default:
+                    text.setAttribute("x", x *3/4);
+                    text.setAttribute("y", y *3/4);
+            }
+            
+            labelTo.forEach(label => {
+                tspan = document.createElementNS(SVG_NS, "tspan");
+
+                tspan.textContent = " "+ label.name +" ";
+                tspan.dataset.id = nodeTo;
+                tspan.dataset.index = label.index;
+
+                tspan.onclick = onSelectInterface;
+
+                text.appendChild(tspan);
+
+                //console.log(tspan.getBBox());
+            });
+        }
+    }
+    
     path.setAttribute("stroke", option.color || parent.settingData["linkColor"] || "#ffffff");
     path.setAttribute("stroke-width", option.size || parent.settingData["linkSize"] || 1);
 

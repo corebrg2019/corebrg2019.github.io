@@ -286,6 +286,8 @@ document.getElementById("close").onclick = close;
                     nodeID = JSON.parse(this.responseText).id;
 
                     document.body.classList.add("edit");
+                    
+                    form.elements["ip"].disabled = true;
                 }
 
                 opener.location.reload();

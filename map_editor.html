@@ -41,8 +41,7 @@ text::selection {
 }
 
 text {
-	font-family: tahoma, arial, "맑은 고딕";
-	font-size: 10px;
+	font-family: 10px "맑은 고딕", Tahoma, Arial;
 	fill: #fff;
 	text-anchor: middle;
 }
@@ -175,8 +174,8 @@ body.drag g.group:hover >circle {
 
 /**/
 
-body.name tspan:last-child,
-body:not(.name) tspan:first-child,
+body.name .node tspan:last-child,
+body:not(.name) .node tspan:first-child,
 body:not(.root) .root {
 	display: none;
 }
@@ -432,7 +431,7 @@ Node.prototype = {
 	reset: function () {
 		this.checked = false;
 
-		window.deviceCanvas.appendChild(this.node);
+		window.nodeCanvas.appendChild(this.node);
 
 		if (window.selected === this) {
 			window.selected = undefined;
@@ -442,19 +441,60 @@ Node.prototype = {
 	}
 };
 
-function Path(posFrom, posTo, option) {
+function Path(posFrom, posTo, option, linkArray) {
 	this.container = document.createElementNS(SVG_NS, "g");
 	
     this.posFrom = posFrom;
 	this.posTo = posTo;
-    this.type = option.type || undefined;
-
+    this.type = option.type;
 	this.path = document.createElementNS(SVG_NS, "polyline");
     
     this.path.setAttribute("stroke", option.color || Path.COLOR);
     this.path.setAttribute("stroke-width", option.size || Path.WIDTH);
 
     this.container.appendChild(this.path);
+
+    const
+        labelFrom = [],
+        labelTo = [];
+
+    if (typeof linkArray === typeof []) {
+        linkArray.forEach(id => {
+            link = window.linkData[id];
+
+            if (link.indexFrom) {
+                const tspan = document.createElementNS(SVG_NS, "tspan");
+
+                tspan.textContent = " "+ link.indexFromName +" ";
+
+                labelFrom.push(tspan);
+            }
+            
+            if (link.indexTo) {
+                const tspan = document.createElementNS(SVG_NS, "tspan");
+
+                tspan.textContent = " "+ link.indexToName +" ";
+
+                labelTo.push(tspan);
+            }
+        });
+    }
+
+    if (labelFrom.length > 0) {
+        this.labelFrom = document.createElementNS(SVG_NS, "text");
+
+        labelFrom.forEach(tspan => this.labelFrom.appendChild(tspan));
+
+        this.container.appendChild(this.labelFrom);
+    }
+
+    if (labelTo.length > 0) {
+        this.labelTo = document.createElementNS(SVG_NS, "text");
+
+        labelTo.forEach(tspan => this.labelTo.appendChild(tspan));
+
+        this.container.appendChild(this.labelTo);
+    }
 
     this.move();
 }
@@ -472,13 +512,43 @@ Path.prototype = {
             case "clock":
                 points = "0,0 "+ x +",0 "+ x +","+ y;
 
+                if (this.labelFrom) {
+                    this.labelFrom.setAttribute("x", x /2);
+                    this.labelFrom.setAttribute("y", 0);
+                }
+
+                if (this.labelTo) {
+                    this.labelTo.setAttribute("x", x);
+                    this.labelTo.setAttribute("y", y /2);
+                }
+
                 break;
             case "counter":
                 points = "0,0 0,"+ y +" "+ x +","+ y;
 
+                if (this.labelFrom) {
+                    this.labelFrom.setAttribute("x", 0);
+                    this.labelFrom.setAttribute("y", y /2);
+                }
+
+                if (this.labelTo) {
+                    this.labelTo.setAttribute("x", x /2);
+                    this.labelTo.setAttribute("y", y);
+                }
+
                 break;
             default:
                 points = "0,0 "+ x +", "+ y;
+
+                if (this.labelFrom) {
+                    this.labelFrom.setAttribute("x", x /4);
+                    this.labelFrom.setAttribute("y", y /4);
+                }
+
+                if (this.labelTo) {
+                    this.labelTo.setAttribute("x", x *3 /4);
+                    this.labelTo.setAttribute("y", y *3 /4);
+                }
         }
         
         this.path.setAttribute("points", points);
@@ -493,7 +563,7 @@ Path.MAX_LABEL_LEN = 16;
 Path.COLOR = "#d4af37";
 Path.DIFF = 6;
 
-function drawPath(nodeFrom, nodeTo, path) {
+function drawPath(nodeFrom, nodeTo, path, linkArray) {
 	if (!(nodeFrom in window.nodeObjectMap) && !(nodeTo in window.nodeObjectMap)) {
 		return;
 	}
@@ -535,7 +605,7 @@ function drawPath(nodeFrom, nodeTo, path) {
     }
 
 	const
-        pathObject = new Path(nodeFromObj.pos, nodeToObj.pos, path);
+        pathObject = new Path(nodeFromObj.pos, nodeToObj.pos, path, linkArray);
 
     nodeFromObj.connect(pathObject);
 	nodeToObj.connect(pathObject);
@@ -575,11 +645,39 @@ function initialize() {
 		}
 	}
 
-	window.deviceCanvas.appendChild(df);
+	window.nodeCanvas.appendChild(df);
+
+    const linkMap = {};
+    var link;
+
+    for (let id in window.linkData) {
+        link = window.linkData[id];
+
+        if (!linkMap[link.nodeFrom]) {
+            linkMap[link.nodeFrom] = {};
+        }
+
+        if (!linkMap[link.nodeTo]) {
+            linkMap[link.nodeTo] = {};
+        }
+
+        if (linkMap[link.nodeFrom][link.nodeTo]) {
+            linkMap[link.nodeFrom][link.nodeTo].push(id);
+        } else {
+            linkMap[link.nodeFrom][link.nodeTo] =
+            linkMap[link.nodeTo][link.nodeFrom] = [id];
+        } 
+    }
+
+    var peerMap;
 
 	for (let nodeFrom in window.pathData) {
-        for (let nodeTo in window.pathData[nodeFrom]) {
-            drawPath(nodeFrom, nodeTo, window.pathData[nodeFrom][nodeTo]);
+        peerMap = window.pathData[nodeFrom];
+
+        link = linkMap[nodeFrom];
+
+        for (let nodeTo in peerMap) {
+            drawPath(nodeFrom, nodeTo, peerMap[nodeTo], link && link[nodeTo]);
         }
 	}
 	
@@ -658,7 +756,7 @@ function onEvent(e) {
                 <g id="link">
 					<line x1="0" y1="0" x2="0" y2="0" />
 				</g>
-				<g id="device"></g>
+				<g id="node"></g>
 				<g id="check"></g>
 				<g id="select"></g>
 			</g>
@@ -714,7 +812,7 @@ const
 
 var 
     upper = window.sessionStorage.getItem("stage_id") && Number(window.sessionStorage.getItem("stage_id")) || undefined,
-	deviceCanvas = document.getElementById("device"),
+	nodeCanvas = document.getElementById("node"),
 	upperCanvas = document.getElementById("up"),
 	pathCanvas = document.getElementById("path"),
 	container = document.getElementById("container"),
@@ -892,7 +990,7 @@ document.getElementById("refresh").onclick = function () {
 			}
 			
 			if (key === SHIFT) {
-				[].forEach.call(window.deviceCanvas.querySelectorAll("g.node"), function (svgDevice) {
+				[].forEach.call(window.nodeCanvas.querySelectorAll("g.node"), function (svgDevice) {
 					const node = window.nodeObjectMap[svgDevice.id];
 
 					if (node && x1 < node.pos.x && node.pos.x < x2 && y1 < node.pos.y && node.pos.y < y2) {
@@ -911,7 +1009,7 @@ document.getElementById("refresh").onclick = function () {
 					}
 				});
 
-				[].forEach.call(window.deviceCanvas.querySelectorAll("g.node"), svgDevice => {
+				[].forEach.call(window.nodeCanvas.querySelectorAll("g.node"), svgDevice => {
 					const node = window.nodeObjectMap[svgDevice.id];
 
 					if (node && x1 < node.pos.x && node.pos.x < x2 && y1 < node.pos.y && node.pos.y < y2) {
@@ -997,7 +1095,7 @@ document.getElementById("edit_anchor").onclick = e => {
 
 	top.showDialog.call(window,
 		type.group === "group"? "/dialog/group.html":
-		"/dialog/device.html", window.selected.node.id);
+		"/dialog/node.html", window.selected.node.id);
 	
 	e.stopPropagation();
 };
@@ -1007,7 +1105,7 @@ window.addEventListener("wheel", function (e) {
 });
 
 document.getElementById("search").onclick = e => top.showDialog.call(window, "/dialog/search.html");
-document.getElementById("add_node").onclick = e => top.showDialog.call(window, "/dialog/device.html");
+document.getElementById("add_node").onclick = e => top.showDialog.call(window, "/dialog/node.html");
 document.getElementById("add_group").onclick = e => top.showDialog.call(window, "/dialog/group.html");
 
 top.postRequest({

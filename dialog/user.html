@@ -134,7 +134,7 @@ body:not(.edit) input[type=reset] {
 				<ul>
 					<li>메일 수신주소</li>
 					<li>
-						<input type="email" name="mail" class="table text"
+						<input type="email" name="email" class="table text"
 							placeholder="홍길동@example.com">
 					</li>
 				</ul>
@@ -196,14 +196,14 @@ body:not(.edit) input[type=reset] {
                 }
             };
 	
-		if (!form.elements["sms"].value && !form.elements["mail"].value) {
+		if (!form.elements["sms"].value && !form.elements["email"].value) {
 			return alert("수신 정보가 하나 이상 필요합니다.");
 		}
 
 		request.user.sms = form.elements["sms"].value || undefined;
-		request.user.mail = form.elements["mail"].value || undefined;
+		request.user.email = form.elements["email"].value || undefined;
 
-        if (document.body.classList.contains("eidt")) {
+        if (document.body.classList.contains("edit")) {
             // 수정
             request.command = "set";
         }
@@ -236,12 +236,12 @@ body:not(.edit) input[type=reset] {
 	window.initialize = function (name, user) {
 		opener = this && this.location;
 
-		if (name) {
+		if (name) {console.log(user);
 			form.elements["name"].value = name;
 			form.elements["name"].disabled = true;
 
 			form.elements["sms"].value = user.sms || "";
-			form.elements["mail"].value = user.mail || "";
+			form.elements["email"].value = user.email || "";
 
 			form.elements["sms"].select();
 

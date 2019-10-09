@@ -26,7 +26,7 @@ body:not(.background)::before {
 
 body, input, button {
 	margin: 0;
-	padding: 0; 
+	padding: 0;
 }
 
 article {
@@ -378,32 +378,32 @@ var
     criticalList = [];
 
 (delay => {
-	var timer, id;
+	var timer;
 
 	window.onEvent = event => {
 		if (timer) {
 			clearTimeout(timer);
 		}
+       
+        if (event.id) {
+            timer = setTimeout(() => {
+                requestAnimationFrame(t => {
+                    const
+                        id = String(event.id),
+                        pos = window.posData[id];
 
-		if ("id" in event) {
-			id = event.id;
-		}
-		
-		timer = setTimeout(() => {
-			requestAnimationFrame(t => {
-                const pos = window.posData[id];
-
-                if (pos.parent) {
-                    window.sessionStorage.setItem("stage_id", String(pos.parent));
-                } else {
-                    window.sessionStorage.removeItem("stage_id");
-                }
+                    if (pos.parent) {
+                        window.sessionStorage.setItem("stage_id", String(pos.parent));
+                    } else {
+                        window.sessionStorage.removeItem("stage_id");
+                    }
                     
-                window.sessionStorage.setItem("focus_id", String(id));
+                    window.sessionStorage.setItem("focus_id", id);
 
-				window.location.reload();
-			});
-		}, delay);
+                    window.location.reload();
+                });
+            }, delay);
+        }
 	};
 }) (1000);
 
@@ -429,11 +429,21 @@ document.getElementById("search").onsubmit = function (e) {
         node = window.nodeData[id];
 
         if (keyword === node.ip || keyword === node.name) {
-            found = true;
+            const pos = window.posData[id];
             
+            if (pos.parent) {
+                window.sessionStorage.setItem("stage_id", String(pos.parent));
+            } else {
+                window.sessionStorage.removeItem("stage_id");
+            }
+
             window.sessionStorage.setItem("focus_id", String(id));
 
             window.location.reload();
+
+            found = true;
+
+            break;
         }
     }
 

@@ -295,16 +295,6 @@ function reload() {
 	window.location.reload();
 }
 
-function onEdit() {
-	switch(window.nodeData[window.selectedID].type) {
-	case "application": top.showDialog.call(window, "/dialog/app.html", window.selectedID);
-		break;
-	case "group": top.showDialog.call(window, "/dialog/group.html", window.selectedID);
-		break;
-	default: top.showDialog.call(window, "/dialog/device.html", window.selectedID);
-	}
-}
-
 function onShowStatus() {
 	window.sessionStorage.setItem("node_id", window.selectedID);
 

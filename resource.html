@@ -149,7 +149,7 @@ section.status.critical::after {
 
 .processor.bar.mask {
     background-color: #fefefe;
-    transition: 1s;
+    transition: 1s linear;
 }
 
 .processor.label {
@@ -447,7 +447,6 @@ storage
 .throughput.gauge {
     height: 2em;
     box-sizing: border-box;
-    border: 1px solid #777;
     background: linear-gradient(to right, rgb(0, 255, 0) 70%, rgb(255, 180, 0) 70% 90%, rgb(255, 0, 0) 90%);
     position: relative;
 }
@@ -874,8 +873,8 @@ function initialize(node) {
             sum = hrProcessorLoad.reduce((a, b) => Number(a)+ Number(b)),
             avg = sum / hrProcessorLoad.length,
             section = document.querySelector("section.hr_processor_load");
-        
-        setProcessor(min, avg, max, node.critical["0"] && node.critical["0"]["1.3.6.1.2.1.25.3.3.1.2"]);
+            
+        window.requestAnimationFrame(setProcessor.bind(window, min, avg, max, node.critical["0"] && node.critical["0"]["1.3.6.1.2.1.25.3.3.1.2"]));
         
         section.onclick = onSelectResource.bind(undefined, "/chart/processor.html", "0");
 
@@ -1058,7 +1057,7 @@ function setStorage(index, used, size, units, critical) {
     obj.used.textContent = ITAhM.util.toBytesString(used * units);
     obj.gauge.dataset.rate = rate.toFixed(2) +"%";
     obj.mask.style.left = rate +"%";
-
+    
     obj.item.classList[critical? "add": "remove"]("critical");
 }
 
