@@ -115,7 +115,7 @@ thread.onmessage = e => {
             break;
         
         case 400:
-            window.location.replace("/signin.html");
+            top.signIn();
             
             break;
         case 503:
@@ -130,7 +130,7 @@ thread.onmessage = e => {
                 form.elements["ip"].value = ar[0];
                 form.elements["tcp"].value = ar[1];
             }
-            
+
             document.body.classList.remove("ready");
 
             break;

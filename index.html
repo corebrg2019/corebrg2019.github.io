@@ -137,33 +137,37 @@ function onEvent(status, event) {
 }
 
 function signIn (account) {
-	document.body.classList.add("authorized");
-	
-	document.getElementById("signout").title = account.username +" 로그아웃";
+    if (account) {
+        document.body.classList.add("authorized");
+        
+        document.getElementById("signout").title = account.username +" 로그아웃";
 
-	window.account = account;
+        window.account = account;
 
-	postRequest({
-		command: "get",
-		target: "setting"
-	}, function () {
-		switch (this.status) {
-		case 200:
-			window.settingData = JSON.parse(this.responseText);
-			
-			setMenu(window.settingData.menu === "true");
+        postRequest({
+            command: "get",
+            target: "setting"
+        }, function () {
+            switch (this.status) {
+            case 200:
+                window.settingData = JSON.parse(this.responseText);
+                
+                setMenu(window.settingData.menu === "true");
 
-			startThread();
+                startThread(window.localStorage.getItem("agent"));
 
-			window.frame.src="/dashboard.html";
+                window.frame.src="/dashboard.html";
 
-			break;
-		default:
-			alert(getMessage(this.status));
+                break;
+            default:
+                alert(getMessage(this.status));
 
-			console.log(this.responseText && JSON.parse(this.responseText).error);
-		}
-	});
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+            }
+        });
+    } else {
+        document.getElementById("signin").src = "/signin.html";
+    }
 }
 
 		</script>
@@ -263,7 +267,7 @@ function onSignOut() {
             </main>
 		</article>
 		<article class="signin">
-            <iframe src="/connect.html"></iframe>
+            <iframe id="signin" src="/connect.html"></iframe>
         </article>
 		<div class="log">
 			<a href="/event.html" target="main">

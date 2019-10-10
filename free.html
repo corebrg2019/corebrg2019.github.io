@@ -34,7 +34,6 @@ body.auto header::after {
 
 		</style>
 		<script src="js/google.js"></script>
-        <script src="/js/thread.js"></script>
 		<script>
 
 // public
@@ -132,7 +131,7 @@ function onEvent(status, event) {
     document.body.classList.add("log");
 }
 
-function signIn (account) {
+function signIn () {
 	document.body.classList.add("authorized");
 
 	window.account = {
@@ -150,7 +149,7 @@ function signIn (account) {
 			
 			setMenu(true);
 
-			startThread();
+			startThread(window.localStorage.getItem("agent"));
 
 			window.frame.src="/dashboard.html";
 
@@ -178,18 +177,6 @@ function postRequest(request, onResponse, timeout) {
 	}
 	
 	xhr.send(JSON.stringify(request));
-}
-
-function onSignOut() {
-	if (confirm("Conritm.\n\n로그아웃 하겠습니까?")) {
-		window.signout = true;
-
-		postRequest({
-			command: "signout"
-		}, function () {	
-			window.location.reload();
-		}, 10000);
-	}
 }
 
 		</script>
@@ -234,8 +221,14 @@ function onSignOut() {
 								<img src="/img/header/information.png">
 							</a>
 							정보
-						</li>
-					</ul>
+                        </li>
+                        <li>
+                            <a id="signout">
+                                <img src="/img/header/signout.png">
+                            </a>
+                            종료
+                        </li>
+                    </ul>
 					<ul id="status" class="status">
 						<li class="normal"></li>
 						<li></li>
@@ -264,6 +257,7 @@ function onSignOut() {
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
         <script src="/js/icon.js"></script>
+        <script src="/js/thread.js"></script>
         
 		<script>
 
@@ -273,11 +267,16 @@ var agent,
 	dialog = document.getElementById("dialog"),
 	log = document.getElementById("log"),
 	sound = new Audio("siren.mp3"),
-	signout = false,
 	logCount = 0;
 
 document.querySelector("div.log").onclick = function () {
 	selectMenu("event");
+};
+
+document.getElementById("signout").onclick = function () {console.log("!");
+    window.localStorage.removeItem("agent");
+
+    window.location.reload();
 };
 
 (function (container) {
@@ -312,21 +311,17 @@ document.querySelector("div.log").onclick = function () {
 }) (document.getElementById("status"));
 
 (function (list) {
-	function remove(a) {
-		a.classList.remove("selected");
-	}
-
-	function addEvent(a) {
-		a.onclick = onClick;
-	}
-
 	function onClick(e) {
-		[].forEach.call(list, remove);
+		[].forEach.call(list, a => a.classList.remove("selected"));
 
 		this.classList.add("selected");
 	}
 	
-	[].forEach.call(list, addEvent);
+	[].forEach.call(list, a => {
+        if (!a.onclick) {
+            a.onclick = onClick;
+        }
+    });
 
 	window.selectMenu = id => {
 		document.getElementById(id).click();

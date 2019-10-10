@@ -1,14 +1,10 @@
 ; "use strict";
 
 (() => {
+    var agent;
     const
-        INTERVAL = 10000,
-        agent = window.localStorage.getItem("agent");
+        INTERVAL = 10000;
     
-    if (!agent) {
-        return;
-    }
-
     const
         updater = new Worker("/js/post_request.js"),
         listener = new Worker("/js/post_request.js"),
@@ -42,7 +38,9 @@
         }
     };
     
-    window.startThread = () => {
+    window.startThread = url => {
+        agent = url;
+        
         update();
 
         listen();
