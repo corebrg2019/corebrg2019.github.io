@@ -355,7 +355,15 @@ function initialize() {
 
 	document.getElementById("count").textContent = count();
 
-	initLabel();
+    initLabel();
+    
+    if (window.sessionStorage.getItem("list_status")) {
+        const status = window.sessionStorage.getItem("list_status");
+
+        window.sessionStorage.removeItem("list_status");
+        
+        document.getElementById(status).click();
+    }
 }
 
 function createRow(id, node) {

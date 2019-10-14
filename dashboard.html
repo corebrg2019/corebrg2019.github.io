@@ -173,6 +173,12 @@ div.nav.hide +#summary_list {
 .pointer {
     cursor: pointer;
 }
+
+.link {
+    pointer-events: all;
+    cursor: pointer;
+}
+
 /* bounce >> */
 .bounce {
 	position: relative;
@@ -314,7 +320,13 @@ function moveStage(id) {
 
 	window.location.reload();
 }
-		
+
+function onSelectStatus(e) {
+    window.sessionStorage.setItem("list_status", this.id);
+
+    top.selectMenu("node");
+}
+
 		</script>
 	</head>
 	
@@ -344,15 +356,15 @@ function moveStage(id) {
 				</header>
 				
 				<div class="top">
-					<div class="bounce">
-						<div id="alert" class="ball red"></div>
+					<div class="bounce link">
+						<div id="shutdown" class="ball red"></div>
 						<div></div>
 					</div>
-					<div class="bounce">
+					<div class="bounce link">
 						<div id="critical"  class="ball orange"></div>
 						<div></div>
 					</div>
-					<div class="bounce">
+					<div class="bounce link">
 						<div id="normal"  class="ball green"></div>
 						<div></div>
 					</div>
@@ -769,9 +781,17 @@ function findParentFromStage(parent) {
             }
         }
 
-        document.getElementById("alert").textContent = sCount;
+        document.getElementById("shutdown").textContent = sCount;
+
+        document.getElementById("shutdown").onclick = onSelectStatus;
+
         document.getElementById("critical").textContent = cCount;
+
+        document.getElementById("critical").onclick = onSelectStatus;
+
         document.getElementById("normal").textContent = nCount;
+
+        document.getElementById("normal").onclick = onSelectStatus;
         
         document.getElementById("summary_list").appendChild(buildLabel());
 
