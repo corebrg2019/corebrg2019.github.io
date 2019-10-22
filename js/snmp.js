@@ -21,6 +21,8 @@ ITAhM.snmp = {
         ifInErrors: "1.3.6.1.2.1.2.2.1.14",
         ifOutOctets: "1.3.6.1.2.1.2.2.1.16",
         ifOutErrors: "1.3.6.1.2.1.2.2.1.20",
+        ipNetToMediaPhysAddress: "1.3.6.1.2.1.4.22.1.2",
+        ipNetToMediaType: "1.3.6.1.2.1.4.22.1.4",
         hrSystemUptime: "1.3.6.1.2.1.25.1.1",
         hrStorageType: "1.3.6.1.2.1.25.2.3.1.2",
         hrStorageDescr: "1.3.6.1.2.1.25.2.3.1.3",

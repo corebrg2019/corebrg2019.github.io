@@ -14,10 +14,54 @@
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
 	margin: 0; padding: 0;
-	display: flex;
-	flex-direction: column;
+	display: flex; flex-direction: column;
 	color: #fff;
     background-color: #424242;
+}
+
+header {
+    flex: none;
+}
+
+main {
+    flex: 1;
+    position: relative;
+}
+
+.address {
+    position: absolute; top: 0; bottom: 0; left: -100%;
+    width: 400px;
+    padding: 1em;
+    box-sizing: border-box;
+    overflow: hidden;
+    overflow-y: auto;
+    transition: all 1s linear;
+    background: #cdcdcd;
+    color: #333;
+}
+
+.address.show {
+    left: 0;
+}
+
+.chart {
+    height: 100%;
+    display: flex; flex-direction: column;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.5em;
+    border: 1px solid #555;
+}
+
+th {
+    background-color: #555;
+    color: #ccc;
 }
 
 iframe {
@@ -157,6 +201,60 @@ body:not(.custom) .cancel {
     display: none;
 }
 
+.switch {
+    vertical-align: middle;
+}
+
+/* switch button*/
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 2em;
+    height: 1em;
+    font-size: 2em;
+}
+
+.switch >input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch >.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 0.5em;
+}
+
+.switch >.slider:before {
+    position: absolute;
+    content: "";
+    height: 0.6em;
+    width: 0.6em;
+    left: 0.2em;
+    bottom: 0.2em;
+    background-color: #fff;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked +.slider {
+    background-color: #242424/*#424242*/;
+}
+
+input:focus +.slider {
+    box-shadow: 0 0 1px  #242424/* #424242*/;
+}
+
+input:checked + .slider:before {
+    transform: translateX(1em);
+}
         </style>
         
         <script src="/js/ITAhM.js"></script>	
@@ -420,6 +518,10 @@ function toString(value) {
                     <input id="limit" type="number" min="0" max="100" required>
                     <span>%</span>
                     <span class="glyph set"></span>
+                    <label class="switch" title="주소 표시">
+                        <input type="checkbox" id="switch">
+                        <span class="slider"></span>
+                    </label>
                 </form>
                 <div class="bandwidth">
                     Bandwidth:
@@ -436,8 +538,20 @@ function toString(value) {
                 </div>
             </div>
         </header>
-        <iframe id="chart_in"></iframe>
-        <iframe id="chart_out"></iframe>
+        <main>
+            <div class="address">
+                <table>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>MAC Address</th>
+                    </tr>
+                </table>
+            </div>
+            <div class="chart">
+                <iframe id="chart_in"></iframe>
+                <iframe id="chart_out"></iframe>
+            </div>
+        </main>
         <div class="bg_loading"></div>
 		<script>
 
@@ -489,6 +603,10 @@ document.querySelector(".set").onclick = function (e) {
     request.oid = oid.pop();
 
     thread.postMessage([window.localStorage.getItem("agent"), request]);
+};
+
+document.getElementById("switch").onclick = function (e) {
+    document.querySelector(".address").classList[this.checked? "add": "remove"]("show");
 };
 
 document.querySelector(".apply").onclick = function (e) {
@@ -625,6 +743,32 @@ top.postRequest({
 
                 if (bandwidth) {
                     document.body.classList.add("custom");
+                }
+
+                const table = document.createDocumentFragment();
+
+                for (let address in nodeData.resource) {
+                    (indexData => {
+                        const mac = indexData[ITAhM.snmp.oid.ipNetToMediaPhysAddress];
+
+                        if (mac && Number(indexData[ITAhM.snmp.oid.ipNetToMediaType]) === 3) {
+                            const i = address.indexOf(".");
+
+                            if (i > -1 && address.substring(0, i) === index) {
+                                const
+                                    tr = document.createElement("tr");
+
+                                table.appendChild(tr);
+
+                                tr.appendChild(document.createElement("td")).textContent = address.substring(i +1);
+                                tr.appendChild(document.createElement("td")).textContent = mac;
+                            }
+                        }
+                    })(nodeData.resource[address]);
+                }
+
+                if (table.hasChildNodes()) {
+                    document.querySelector("table").appendChild(table);
                 }
 
                 initCritical();
