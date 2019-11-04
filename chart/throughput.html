@@ -721,14 +721,14 @@ top.postRequest({
         
         if (!("resource" in nodeData) ||
             !(index in nodeData.resource) ||
-            !((bandwidth, speed, name, descr) => {
-                if (!bandwidth && !speed) {
+            !((bandwidth, ifHighSpeed, ifSpeed, name, alias) => {
+                if (!bandwidth && !ifHighSpeed && !ifSpeed) {
                     return false;
                 }
 
-                window.max = Number(bandwidth || speed);
+                window.max = Number(bandwidth || (ifHighSpeed && ifHighSpeed *1000000) || ifSpeed);
 
-                document.getElementById("if_name").textContent = name || descr || "";
+                document.getElementById("if_name").textContent = name || alias || "";
                 
                 let
                     n=window.max,
@@ -775,9 +775,10 @@ top.postRequest({
 
                 return true;
             })(nodeData.resource[index][ITAhM.snmp.oid.bandwidth],
+            nodeData.resource[index][ITAhM.snmp.oid.ifHighSpeed],
             nodeData.resource[index][ITAhM.snmp.oid.ifSpeed],
             nodeData.resource[index][ITAhM.snmp.oid.ifName],
-            nodeData.resource[index][ITAhM.snmp.oid.ifDescr])) {
+            nodeData.resource[index][ITAhM.snmp.oid.ifAlias])) {
             
             alert ("Error!\n\n노드가 차트를 제공하지 않습니다.");
 

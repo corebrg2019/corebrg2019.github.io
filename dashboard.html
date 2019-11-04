@@ -380,7 +380,12 @@ function onSelectStatus(e) {
         <script src="/js/icon.js"></script>
 		<script>
 
+const UPPER_POS = {
+		x: 0,
+		y: 0
+	};
 var
+    thread = new Worker("/js/thread.js"),
 	upper = window.sessionStorage.getItem("stage_id") && Number(window.sessionStorage.getItem("stage_id")) || undefined,
     nodeData, posData, pathData,
     iconData = ITAhM.iconData,
@@ -388,6 +393,11 @@ var
     mapList = [],
     shutdownList = [],
     criticalList = [];
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 (delay => {
 	var timer;
@@ -531,6 +541,12 @@ function findParentFromStage(parent) {
 	mapFrame.onload = function () {
         mapFrame.contentWindow.display();
 
+        if (window.upper) {
+            const node = mapFrame.contentWindow.addNode(window.upper, UPPER_POS);
+            
+            node.onclick = moveStage.bind(node, window.posData[window.upper].parent);
+        }
+
         window.mapList.forEach(id => mapFrame.contentWindow.addNode(id));
 
         window.criticalList.forEach(id => mapFrame.contentWindow.setNode(id, "critical"));
@@ -641,56 +657,168 @@ function findParentFromStage(parent) {
         });
     };
     
-    top.postRequest({
-        command: "get",
-        target: ["node", "path", "link", "position", "setting", "icon"]
-    }, function () {
-        switch (this.status) {
-        case 200:
-            const target = JSON.parse(this.responseText);
-            
-            window.nodeData = target.node;
-            window.linkData = target.link;
-            window.pathData = target.path;
-            window.posData = target.position;
-            window.settingData = target.setting;
-            
-            for (let type in target.icon) {
-                window.iconData[type] = target.icon[type];
-            }
-            
-            if ("background" in window.settingData) {
-                document.body.style.backgroundImage = "url("+ window.settingData.background +")";
+    function initNode(e) {
+        switch(e.data.status) {
+            case 200:
+                window.nodeData = JSON.parse(e.data.responseText);
+                
+                thread.onmessage = initPath;
 
-                document.body.classList.add("background");
-            }
+                thread.postMessage({action: "request", request: {
+                    command: "get",
+                    target: "path"
+                }});
 
-            if ("display" in window.settingData) {
-                document.getElementById("display").value = window.settingData.display;
-            }
-            else {
-                window.settingData.display = "name";
-            }
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert("Error!\n\n"+
+                    "에이전트가 응답하지 않습니다.\n"+
+                    "오류코드 "+ e.data.status);
 
-            if ("map" in window.settingData && window.settingData.map == "map3d.html") {
-                document.getElementById("threed").checked = true;
-            }
-            else {
-                window.settingData.map = "map2d.html";
-            }
-            
-            initialize();
-
-            topFrame.src ="/top.html";
-            mapFrame.src = window.settingData.map;
-            
-            break;
-        default:
-            alert(top.getMessage(this.status));
-
-            console.log(this.responseText && JSON.parse(this.responseText).error);
+                console.log(this.responseText && JSON.parse(this.responseText).error);
         }
-    });
+    }
+
+    function initPath(e) {
+        switch(e.data.status) {
+            case 200:
+                window.pathData = JSON.parse(e.data.responseText);
+                
+                thread.onmessage = initLink;
+                
+                thread.postMessage({action: "request", request: {
+                    command: "get",
+                    target: "link"
+                }});
+                
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    }
+
+    function initLink(e) {
+        switch(e.data.status) {
+            case 200:
+                window.linkData = JSON.parse(e.data.responseText);
+                
+                thread.onmessage = initPosition;
+                
+                thread.postMessage({action: "request", request: {
+                    command: "get",
+                    target: "position"
+                }});
+            
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    }
+
+    function initPosition(e) {
+        switch(e.data.status) {
+            case 200:
+                window.posData = JSON.parse(e.data.responseText);
+
+                thread.onmessage = initSetting;
+                
+                thread.postMessage({action: "request", request: {
+                    command: "get",
+                    target: "setting"
+                }});
+                
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    }
+
+    function initSetting(e) {
+        switch(e.data.status) {
+            case 200:
+                window.settingData = JSON.parse(e.data.responseText);
+                
+                if ("background" in window.settingData) {
+                    document.body.style.backgroundImage = "url("+ window.settingData.background +")";
+
+                    document.body.classList.add("background");
+                }
+
+                if ("display" in window.settingData) {
+                    document.getElementById("display").value = window.settingData.display;
+                }
+                else {
+                    window.settingData.display = "name";
+                }
+
+                if ("map" in window.settingData && window.settingData.map == "map3d.html") {
+                    document.getElementById("threed").checked = true;
+                }
+                else {
+                    window.settingData.map = "map2d.html";
+                }
+
+                thread.onmessage = initIcon;
+                
+                thread.postMessage({action: "request", request: {
+                    command: "get",
+                    target: "icon"
+                }});
+
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    }
+
+    function initIcon(e) {
+        switch(e.data.status) {
+            case 200:
+                const iconData = JSON.parse(e.data.responseText);
+
+                for (let type in iconData) {
+                    window.iconData[type] = iconData[type];
+                }
+
+                initialize();
+
+                topFrame.src ="/top.html";
+                mapFrame.src = window.settingData.map;
+                
+                break;
+            case -1:
+                console.trace(e.data.exception);
+            default:
+                alert(top.getMessage(this.status));
+
+                console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    }
+
+    thread.onmessage = initNode;
+
+    thread.postMessage({action: "request", request: {
+        command: "get",
+        target: "node"
+    }});
 
     function initialize() {
         const

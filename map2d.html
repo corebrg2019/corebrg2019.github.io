@@ -434,7 +434,9 @@ function addNode(id, pos) {
 	}
 	else {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.disabled);
-	}
+    }
+    
+    return svgDevice;
 }
 
 function setNode(id, status) {
@@ -605,7 +607,10 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
             labelFrom.forEach(label => {
                 tspan = document.createElementNS(SVG_NS, "tspan");
 
-                tspan.textContent = " "+ label.name +" ";
+                tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
+                    label.name.substring(0, TEXT_TRIM) +"...":
+                    label.name) +" ";
+
                 tspan.dataset.id = nodeFrom;
                 tspan.dataset.index = label.index;
 
@@ -643,7 +648,10 @@ function drawPath(nodeFrom, nodeTo, option, linkArray) {
             labelTo.forEach(label => {
                 tspan = document.createElementNS(SVG_NS, "tspan");
 
-                tspan.textContent = " "+ label.name +" ";
+                tspan.textContent = " "+ (label.name.length >= TEXT_TRIM?
+                    label.name.substring(0, TEXT_TRIM) +"...":
+                    label.name) +" ";
+                
                 tspan.dataset.id = nodeTo;
                 tspan.dataset.index = label.index;
 
@@ -686,14 +694,6 @@ function start () {
     else {
         mapCanvas.style.animationName = "initialize";
     }
-
-    if (parent.upper) {
-		addNode(parent.upper, UPPER_POS);
-
-		const node = window.nodeSVGMap[parent.upper];
-		
-		node.onclick = parent.moveStage.bind(node, parent.posData[parent.upper].parent);
-    }
 }
 
 function display() {
@@ -721,7 +721,7 @@ function display() {
         <script>
 
 const
-	MAX_LABEL_LEN = 16,
+    TEXT_TRIM = 20,
 	LINE_WIDTH = 2,
 	BAR_WIDTH = 10,
     BAR_HEIGHT = 30,

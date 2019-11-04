@@ -1,58 +1,31 @@
-; "use strict";
+var agent;
 
-(() => {
-    var agent;
-    const
-        INTERVAL = 10000;
-    
-    const
-        updater = new Worker("/js/post_request.js"),
-        listener = new Worker("/js/post_request.js"),
-        updateRequest = {
-            command: "echo"
-        },
-        listenRequest = {
-            command: "listen"
-        };
-    var requestTime;
+self.onmessage = e => {
+	switch(e.data.action) {
+        case "initialize":
+            agent = e.data.agent;
 
-    updater.onmessage = e => {
-        onUpdate(e.data.status, new Date().getTime() - requestTime);
+            break;
+        case "request":
+            const xhr = new XMLHttpRequest();
+                
+            xhr.open("POST", agent, false);
+            xhr.withCredentials = true;
 
-        setTimeout(update, INTERVAL);
-    };
-    
-    listener.onmessage = e => {
-        const
-            status = e.data.status,
-            event = JSON.parse(e.data.responseText);
+            try {
+                xhr.send(JSON.stringify(e.data.request));
+                
+                self.postMessage({
+                    status: xhr.status,
+                    responseText: xhr.responseText
+                });
+            } catch (e) {
+                self.postMessage({
+                    status: -1,
+                    exception: e
+                });
+            }
 
-        listenRequest.eventID = event.eventID +1;
-
-        if (status == 200) {
-            onEvent(status, event);
-
-            listen();
-        } else {
-            setTimeout(listen, 1000);
-        }
-    };
-    
-    window.startThread = url => {
-        agent = url;
-        
-        update();
-
-        listen();
-    };
-    
-    function update() {
-        requestTime = new Date().getTime();
-        
-        updater.postMessage([agent, updateRequest]);
+            break;
     }
-
-    function listen() {
-        listener.postMessage([agent, listenRequest]);
-    }
-})();
+};

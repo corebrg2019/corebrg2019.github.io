@@ -465,7 +465,9 @@ function Path(posFrom, posTo, option, linkArray) {
             if (link.indexFrom) {
                 const tspan = document.createElementNS(SVG_NS, "tspan");
 
-                tspan.textContent = " "+ link.indexFromName +" ";
+                tspan.textContent = " "+ (link.indexFromName.length >= Path.TEXT_TRIM?
+                    link.indexFromName.substring(0, Path.TEXT_TRIM) +"...":
+                    link.indexFromName) +" ";
 
                 labelFrom.push(tspan);
             }
@@ -473,7 +475,9 @@ function Path(posFrom, posTo, option, linkArray) {
             if (link.indexTo) {
                 const tspan = document.createElementNS(SVG_NS, "tspan");
 
-                tspan.textContent = " "+ link.indexToName +" ";
+                tspan.textContent = " "+ (link.indexToName.length >= Path.TEXT_TRIM?
+                    link.indexToName.substring(0, Path.TEXT_TRIM) +"...":
+                    link.indexToName) +" ";
 
                 labelTo.push(tspan);
             }
@@ -558,9 +562,10 @@ Path.prototype = {
     }
 };
 
+Path.TEXT_TRIM = 20;
 Path.WIDTH = 0.5;
 Path.MAX_LABEL_LEN = 16;
-Path.COLOR = "#d4af37";
+Path.COLOR = "#fff";
 Path.DIFF = 6;
 
 function drawPath(nodeFrom, nodeTo, path, linkArray) {
@@ -810,7 +815,8 @@ const
 	OFFSET_C = ICON_SIZE * Math.sin(Math.PI /4);
 	//OFFSET_R = OFFSET_C - ICON_SIZE /2;
 
-var 
+var
+    thread = new Worker("/js/thread.js"),
     upper = window.sessionStorage.getItem("stage_id") && Number(window.sessionStorage.getItem("stage_id")) || undefined,
 	nodeCanvas = document.getElementById("node"),
 	upperCanvas = document.getElementById("up"),
@@ -830,6 +836,11 @@ var
     nodeData, pathData, linkData,
     iconData = ITAhM.iconData,
 	isDragging = false;
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 if (top.account.level === 0) {
 	document.body.classList.add("root");
@@ -1078,7 +1089,7 @@ document.getElementById("refresh").onclick = function () {
 	function resize() {
 		rect = mapCanvas.getBoundingClientRect();
 		
-		window.transform.getItem(0).setTranslate(rect.width /2, rect.height /2);
+        window.transform.getItem(0).setTranslate(rect.width /2, rect.height /2);
 	}
 
 	resize();
@@ -1108,45 +1119,133 @@ document.getElementById("search").onclick = e => top.showDialog.call(window, "/d
 document.getElementById("add_node").onclick = e => top.showDialog.call(window, "/dialog/node.html");
 document.getElementById("add_group").onclick = e => top.showDialog.call(window, "/dialog/group.html");
 
-top.postRequest({
-		command: "get",
-		target: ["node", "path", "link", "icon", "setting"]
-	}, function () {
-	switch (this.status) {
-	case 200:
-        const
-            target = JSON.parse(this.responseText),
-            settingData = target.setting;
+function initNode(e) {
+    switch(e.data.status) {
+        case 200:
+            window.nodeData = JSON.parse(e.data.responseText);
+            
+            thread.onmessage = initPath;
 
-		window.nodeData = target.node;
-        window.pathData = target.path;
-        window.linkData = target.link;
+            thread.postMessage({action: "request", request: {
+                command: "get",
+                target: "path"
+            }});
 
-		if ("display" in settingData) {
-			document.body.classList["display" in settingData && settingData.display === "name"? "add": "remove"]("name");
-		}
+            break;
+        case -1:
+            console.trace(e.data.exception);
+        default:
+            alert(top.getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+function initPath(e) {
+    switch(e.data.status) {
+        case 200:
+            window.pathData = JSON.parse(e.data.responseText);
+            
+            thread.onmessage = initLink;
+            
+            thread.postMessage({action: "request", request: {
+                command: "get",
+                target: "link"
+            }});
+            
+            break;
+        case -1:
+            console.trace(e.data.exception);
+        default:
+            alert(top.getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+function initLink(e) {
+    switch(e.data.status) {
+        case 200:
+            window.linkData = JSON.parse(e.data.responseText);
+            
+            thread.onmessage = initIcon;
+            
+            thread.postMessage({action: "request", request: {
+                command: "get",
+                target: "icon"
+            }});
         
-        if ("linkColor" in settingData) {
-            Path.COLOR = settingData.linkColor;
-        }
+            break;
+        case -1:
+            console.trace(e.data.exception);
+        default:
+            alert(top.getMessage(this.status));
 
-        if ("linkSize" in settingData) {
-            Path.WIDTH = wsettingData.linkSize;
-        }
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
 
-        for (let type in target.icon) {
-            iconData[type] = target.icon[type];
-        }
-        
-		initialize();
+function initIcon(e) {
+    switch(e.data.status) {
+        case 200:
+            const iconData = JSON.parse(e.data.responseText);
 
-		break;
-	default:
-		alert(top.getMessage(this.status));
+            for (let type in iconData) {
+                window.iconData[type] = iconData[type];
+            }
 
-		console.log(this.responseText && JSON.parse(this.responseText).error);
-	}
-});
+            thread.onmessage = initSetting;
+            
+            thread.postMessage({action: "request", request: {
+                command: "get",
+                target: "setting"
+            }});
+
+            break;
+        case -1:
+            console.trace(e.data.exception);
+        default:
+            alert(top.getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+function initSetting(e) {
+    switch(e.data.status) {
+        case 200:
+            const settingData = JSON.parse(e.data.responseText);
+
+            if ("display" in settingData) {
+                document.body.classList["display" in settingData && settingData.display === "name"? "add": "remove"]("name");
+            }
+            
+            if ("linkColor" in settingData) {
+                Path.COLOR = settingData.linkColor;
+            }
+
+            if ("linkSize" in settingData) {
+                Path.WIDTH = settingData.linkSize;
+            }
+            
+            initialize();
+            
+            break;
+        case -1:
+            console.trace(e.data.exception);
+        default:
+            alert(top.getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+thread.onmessage = initNode;
+
+thread.postMessage({action: "request", request: {
+    command: "get",
+    target: "node"
+}});
 
 		</script>
 	

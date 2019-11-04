@@ -8,38 +8,9 @@
 
 @import "/css/index.css";
 
-body.auto header {
-    position: absolute;
-    top: 0; bottom: 0; left: 0;
-    transform: translateX(-100%);
-    transition: 0.5s;
-    background-color: #4d525a;
-}
-
-body.auto header:hover {
-    transform: none;
-}
-
-body.auto header::after {
-	content: "";
-	position: absolute; top: 50%; right: -1em;
-	width: 1em; height: 2em;
-	box-sizing: border-box;
-	background-color: red;
-	border-top-right-radius: 1em;
-	border-bottom-right-radius: 1em;
-	transform: translateY(-50%);
-}
-
-
 		</style>
 		<script src="js/google.js"></script>
 		<script>
-
-// public
-function setMenu(showMenu) {
-	document.body.classList[showMenu? "remove": "add"]("auto");
-} 
 
 // public
 function showDialog() {
@@ -131,37 +102,6 @@ function onEvent(status, event) {
     document.body.classList.add("log");
 }
 
-function signIn () {
-	document.body.classList.add("authorized");
-
-	window.account = {
-        username: "root",
-        level: 0
-    };
-
-	postRequest({
-		command: "get",
-		target: "setting"
-	}, function () {
-		switch (this.status) {
-		case 200:
-			window.settingData = JSON.parse(this.responseText);
-			
-			setMenu(true);
-
-			startThread(window.localStorage.getItem("agent"));
-
-			window.frame.src="/dashboard.html";
-
-			break;
-		default:
-			alert(getMessage(this.status));
-
-			console.log(this.responseText && JSON.parse(this.responseText).error);
-		}
-	});
-}
-
 		</script>
 		<script>
 
@@ -182,7 +122,7 @@ function postRequest(request, onResponse, timeout) {
 		</script>
 	</head>
 	
-	<body>
+	<body class="authorized">
 		<article class="itahm">
 			<header>
 				<div>
@@ -222,12 +162,6 @@ function postRequest(request, onResponse, timeout) {
 							</a>
 							정보
                         </li>
-                        <li>
-                            <a id="signout">
-                                <img src="/img/header/signout.png">
-                            </a>
-                            종료
-                        </li>
                     </ul>
 					<ul id="status" class="status">
 						<li class="normal"></li>
@@ -240,9 +174,6 @@ function postRequest(request, onResponse, timeout) {
 				<iframe id="frame" name="main"></iframe>
             </main>
 		</article>
-		<article class="signin">
-            <iframe src="/connect.html"></iframe>
-        </article>
 		<div class="log">
 			<a href="/event.html" target="main">
 				<span id="count">99</span>
@@ -257,11 +188,15 @@ function postRequest(request, onResponse, timeout) {
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
         <script src="/js/icon.js"></script>
-        <script src="/js/thread.js"></script>
+        <script src="/js/listener.js"></script>
         
 		<script>
 
-var agent,
+var
+    account = {
+        username: "root",
+        level: 0
+    },
 	frame = document.getElementById("frame"),
 	count = document.getElementById("count"),
 	dialog = document.getElementById("dialog"),
@@ -269,14 +204,10 @@ var agent,
 	sound = new Audio("siren.mp3"),
 	logCount = 0;
 
+window.localStorage.setItem("agent", "http://127.0.0.1:2014");
+
 document.querySelector("div.log").onclick = function () {
 	selectMenu("event");
-};
-
-document.getElementById("signout").onclick = function () {console.log("!");
-    window.localStorage.removeItem("agent");
-
-    window.location.reload();
 };
 
 (function (container) {
@@ -295,7 +226,7 @@ document.getElementById("signout").onclick = function () {console.log("!");
 			break;
 
 		case 0:
-		item.textContent = "지연";
+		    item.textContent = "지연";
 			item.className = "shutdown";
 
 			break;
@@ -328,6 +259,25 @@ document.getElementById("signout").onclick = function () {console.log("!");
 	};
 }) (document.querySelector("header").querySelectorAll("a"));
 
+postRequest({
+    command: "get",
+    target: "setting"
+}, function () {
+    switch (this.status) {
+    case 200:
+        window.settingData = JSON.parse(this.responseText);
+        
+        startThread(window.localStorage.getItem("agent"));
+
+        window.frame.src="/dashboard.html";
+
+        break;
+    default:
+        alert(getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+});
 		</script>
 	
 	</body>

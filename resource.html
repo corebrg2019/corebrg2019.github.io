@@ -745,12 +745,12 @@ function createIFaceItem(index, name, descr, alias, type) {
         err: item.children[9]
     }
 	
-    item.children[1].textContent = name || descr || alias;
-	item.children[2].textContent = descr || alias;
+    item.children[1].textContent = name || alias || descr;
+	item.children[2].textContent =  alias || descr;
 	item.children[3].textContent = type + "("+ ITAhM.snmp.ifType[type] +")";
 
-    if (alias) {
-        item.title = alias;
+    if (descr) {
+        item.title = descr;
     }
 
 	return item;
@@ -820,10 +820,10 @@ function initialize(node) {
             , indexData["1.3.6.1.2.1.25.2.3.1.3"]);
         
         // 인터페이스
-        (function(descr, type, bandwidth, speed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
-            if (inOcts && outOcts && (bandwidth || speed) && inErrs && outErrs && aStatus && oStatus) {
+        (function(descr, type, bandwidth, ifHighSpeed, ifSpeed, aStatus, oStatus, inOcts, outOcts, inErrs, outErrs, name, alias) {
+            if (inOcts && outOcts && (bandwidth || ifHighSpeed || ifSpeed) && inErrs && outErrs && aStatus && oStatus) {
                 const data = {
-                        speed: bandwidth && Number(bandwidth) || Number(speed),
+                        speed: bandwidth && Number(bandwidth) || ifHighSpeed && Number(ifHighSpeed) *1000000 || ifSpeed && Number(ifSpeed),
                         inOcts: Number(inOcts),
                         outOcts: Number(outOcts),
                         inErrs: Number(inErrs),
@@ -840,6 +840,7 @@ function initialize(node) {
         })(indexData["1.3.6.1.2.1.2.2.1.2"]
             , indexData["1.3.6.1.2.1.2.2.1.3"]
             , indexData[ITAhM.snmp.oid.bandwidth]
+            , indexData[ITAhM.snmp.oid.ifHighSpeed]
             , indexData["1.3.6.1.2.1.2.2.1.5"]
             , indexData["1.3.6.1.2.1.2.2.1.7"]
             , indexData["1.3.6.1.2.1.2.2.1.8"]
@@ -944,7 +945,7 @@ function initialize(node) {
                     indexData.descr,
                     indexData.alias,
                     indexData.type));
-                    
+            
             if (indexData.aStatus != 1) {
                 item.classList.add("disabled");
             }
@@ -1175,7 +1176,8 @@ function update(node) {
 
                 setThroughput(index,
                     indexData[ITAhM.snmp.oid.bandwidth] && Number(indexData[ITAhM.snmp.oid.bandwidth]) ||
-                    Number(indexData["1.3.6.1.2.1.2.2.1.5"]), // speed
+                    indexData[ITAhM.snmp.oid.ifHighSpeed] && Number(indexData[ITAhM.snmp.oid.ifHighSpeed]) *1000000|| // ifHighSpeed
+                    indexData["1.3.6.1.2.1.2.2.1.5"] && Number(indexData["1.3.6.1.2.1.2.2.1.5"]), // ifSpeed
                     Number(indexData["1.3.6.1.4.1.49447.3.1"]), // in
                     Number(indexData["1.3.6.1.4.1.49447.3.2"]), // out
                     Math.max(Number(indexData["1.3.6.1.4.1.49447.3.3"]), Number(indexData["1.3.6.1.4.1.49447.3.4"])), //err
@@ -1185,7 +1187,9 @@ function update(node) {
                     criticalData[index]["1.3.6.1.4.1.49447.3.3"] ||
                     criticalData[index]["1.3.6.1.4.1.49447.3.4"]));
             }
-        } catch (e) {console.error(e)}
+        } catch (e) {
+            console.trace(e);
+        }
     }
 }
 
@@ -1448,7 +1452,7 @@ var
 
 document.querySelector(".response_time").onclick = onSelectResource.bind(window, "/chart/responseTime.html", "0");
 
-document.getElementById("filter").onclick = e => {
+document.getElementById("filter").onclick = function (e) {
 	document.body.classList[this.checked? "remove": "add"]("filter");
 };
 

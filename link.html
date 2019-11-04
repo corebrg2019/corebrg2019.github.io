@@ -448,9 +448,15 @@ function sortIP(e) {
 		<script>
 
 var 
+    thread = new Worker("/js/thread.js"),
 	header = document.getElementById("header"),
 	list = document.getElementById("list"),
 	customData;
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
     document.getElementById("save").onclick = onSave;
 
@@ -524,60 +530,93 @@ document.getElementById("ip2").onclick = sortIP;
 	}
 }) (document.querySelector("form"));
 
-function initialize() {
-    top.postRequest({
-        command: "get",
-        target: ["link", "node"]
-    }, function () {
-        switch (this.status) {
-        case 200:
-            const target = JSON.parse(this.responseText);
-
-            window.linkData = target.link;
-            window.nodeData = target.node;
-            
-            initList();
-
-            break;
-        default:
-            alert(top.getMessage(this.status));
-
-            console.log(this.responseText && JSON.parse(this.responseText).error);
-        }
-});
-}
-
-function initCustom(customs) {
-    const df = document.createDocumentFragment();
-    
-    window.customData = customs.split(",");
-    
-    window.customData.forEach(function (custom) {
-        df.appendChild(document.createElement("li")).textContent = custom;
-    });
-    
-    window.header.appendChild(df);
-}
-
-top.postRequest({
-    command: "get",
-    target: "setting",
-    key: "customLink",
-}, function () {
-    switch(this.status) {
+function initNode(e) {
+    switch(e.data.status) {
     case 200:
-        initCustom(JSON.parse(this.responseText).customLink);
-
-    case 204:
-        initialize();
+        window.nodeData = JSON.parse(e.data.responseText);
+            
+        initList();
         
         break;
+    case -1:
+        console.trace(e.data.exception);
     default:
         alert(top.getMessage(this.status));
 
         console.log(this.responseText && JSON.parse(this.responseText).error);
     }
+}
+
+function initLink(e) {
+    switch(e.data.status) {
+    case 200:
+        window.linkData = JSON.parse(e.data.responseText);
+        
+        thread.onmessage = initNode;
+        
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "node"
+            }
+        });
+
+        break;
+    case -1:
+        console.trace(e.data.exception);
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+function initSetting(e) {
+    switch(e.data.status) {
+    case 200:
+        const
+            df = document.createDocumentFragment(),
+            customs = JSON.parse(e.data.responseText).customLink;
+        
+        window.customData = customs.split(",");
+    
+        window.customData.forEach(function (custom) {
+            df.appendChild(document.createElement("li")).textContent = custom;
+        });
+        
+        window.header.appendChild(df);
+    case 204:
+        thread.onmessage = initLink;
+        
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "link"
+            }
+        });
+
+        break;
+    case -1:
+        console.trace(e.data.exception);
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+thread.onmessage = initSetting;
+
+thread.postMessage({
+    action: "request",
+    request: {
+        "command": "get",
+        "target": "setting"
+    }
 });
+
 </script>
 	
 	</body>

@@ -616,7 +616,8 @@ function forEach(a, f) {
 		<script src="js/object.js"></script>
 		<script>
 
-var 
+var
+    thread = new Worker("/js/thread.js"),
 	header = document.getElementById("header"),
 	label = document.getElementById("label"),
 	list = document.getElementById("list"),
@@ -628,6 +629,11 @@ var
 		"": []
 	},
 	customs, selected;
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 label.onchange = function () {
 	const
@@ -777,29 +783,85 @@ document.getElementById("sort").onclick = function (e) {
 
 }) (document.querySelector("form"));
 
-top.postRequest({
-	command: "get",
-	target: ["node", "icon", "setting"]
-}, function () {
-	switch (this.status) {
-	case 200:
-        const target = JSON.parse(this.responseText);
-
-        window.nodeData = target.node;
-        window.settingData = target.setting;
+function initSetting(e) {
+    switch(e.data.status) {
+    case 200:
+        window.settingData = JSON.parse(e.data.responseText);
         
-        for (type in target.icon) {
-            window.iconData[type] = target.icon[type];
+        initialize();
+
+        break;
+    case -1:
+        console.trace(e.data.exception);
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+function initIcon(e) {
+    switch(e.data.status) {
+    case 200:
+        const iconData = JSON.parse(e.data.responseText);
+
+        for (let type in iconData) {
+            window.iconData[type] = iconData[type];
         }
+        
+        thread.onmessage = initSetting;
+            
+        thread.postMessage({
+            action: "request",
+            request: {
+                "command": "get",
+                "target": "setting"
+            }
+        });
+        
+        break;
+    case -1:
+        console.trace(e.data.exception);
+    default:
+        alert(top.getMessage(this.status));
 
-		initialize();
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
 
-		break;
-	default:
-		alert(top.getMessage(this.status));
+function initNode(e) {
+    switch(e.data.status) {
+    case 200:
+        window.nodeData = JSON.parse(e.data.responseText);
+            
+        thread.onmessage = initIcon;
+        
+        thread.postMessage({
+            action: "request",
+            request: {
+                "command": "get",
+                "target": "icon"
+            }
+        });
 
-		console.log(this.responseText && JSON.parse(this.responseText).error);
-	}
+        break;
+    case -1:
+        console.trace(e.data.exception);
+    default:
+        alert(top.getMessage(this.status));
+
+        console.log(this.responseText && JSON.parse(this.responseText).error);
+    }
+}
+
+thread.onmessage = initNode;
+
+thread.postMessage({
+    action: "request",
+    request: {
+        "command": "get",
+        "target": "node"
+    }
 });
 
 </script>

@@ -183,11 +183,12 @@ ul {
 			case 200:
 				const
 					data = JSON.parse(this.responseText),
-					df = document.createDocumentFragment(),
-					indexArray = Object.keys(data).sort(function (a, b) {
-						return parseInt(a) - parseInt(b);
-					}),
-					count = indexArray.length;
+                    df = document.createDocumentFragment(),
+                    indexArray = Object.keys(data).sort(function (a, b) {
+                        return parseInt(a) - parseInt(b);
+                    }),
+                    count = indexArray.length;
+                
 				
 				for (let i=0, item; i<count; i++) {
 					if (item = createItem(data[indexArray[i]])) {

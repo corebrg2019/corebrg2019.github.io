@@ -33,8 +33,7 @@ body.auto header::after {
 
 
 		</style>
-		<script src="js/google.js"></script>
-        <script src="/js/thread.js"></script>
+        <script src="/js/listener.js"></script>
 		<script>
 
 // public
@@ -137,37 +136,35 @@ function onEvent(status, event) {
 }
 
 function signIn (account) {
-    if (account) {
-        document.body.classList.add("authorized");
-        
-        document.getElementById("signout").title = account.username +" 로그아웃";
+    document.body.classList.add("authorized");
+    
+    document.getElementById("signout").title = account.username +" 로그아웃";
 
-        window.account = account;
+    window.account = account;
 
-        postRequest({
-            command: "get",
-            target: "setting"
-        }, function () {
-            switch (this.status) {
-            case 200:
-                window.settingData = JSON.parse(this.responseText);
-                
-                setMenu(window.settingData.menu === "true");
+    document.title = window.localStorage.getItem("agent");
 
-                startThread(window.localStorage.getItem("agent"));
+    postRequest({
+        command: "get",
+        target: "setting"
+    }, function () {
+        switch (this.status) {
+        case 200:
+            window.settingData = JSON.parse(this.responseText);
+            
+            setMenu(window.settingData.menu === "true");
 
-                window.frame.src="/dashboard.html";
+            startThread(window.localStorage.getItem("agent"));
 
-                break;
-            default:
-                alert(getMessage(this.status));
+            window.frame.src="/dashboard.html";
 
-                console.log(this.responseText && JSON.parse(this.responseText).error);
-            }
-        });
-    } else {
-        document.getElementById("signin").src = "/signin.html";
-    }
+            break;
+        default:
+            alert(getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    });
 }
 
 		</script>
@@ -286,8 +283,8 @@ function onSignOut() {
         
 		<script>
 
-var agent,
-	frame = document.getElementById("frame"),
+var
+    frame = document.getElementById("frame"),
 	count = document.getElementById("count"),
 	dialog = document.getElementById("dialog"),
 	log = document.getElementById("log"),
@@ -317,7 +314,7 @@ document.querySelector("div.log").onclick = function () {
 			break;
 
 		case 0:
-		item.textContent = "지연";
+		    item.textContent = "지연";
 			item.className = "shutdown";
 
 			break;
