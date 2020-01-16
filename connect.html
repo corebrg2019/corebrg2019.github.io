@@ -6,6 +6,8 @@
 		
 		<style>
 
+@import "/css/fa.css";
+
 body {
     font-family: arial, tahoma, "맑은 고딕";
     font-size: 10pt;
@@ -29,17 +31,13 @@ form {
 
 h1, h2 {
     text-align: center;
-}
-
-input {
-	width: 100%;
-	box-sizing: border-box;
-	padding: 10px;
-	border: 1px solid #ddd;
-	border-radius: 3px 3px 3px 3px;
+    color: #ffffff;
 }
 
 input[type=submit] {
+    width: 100%;
+	box-sizing: border-box;
+	padding: 10px;
 	margin-top: 20px;
 	background-image: linear-gradient(#7af, #0084ff 45%,  #0084ff 55%, #7af);
 	border: 1px solid #07f;
@@ -47,14 +45,27 @@ input[type=submit] {
 	color: #fff;
 }
 
-input[name="ip"] {
-	background: url("/img/home.png") no-repeat 10px center;
-	padding-left: 36px;
+.glyph {
+    font-family: 'Font Awesome 5 Free';
 }
 
-input[name="tcp"] {
-	background: transparent url("/img/port.png") no-repeat 10px center;
-	padding-left: 36px;
+.input {
+    display: flex;
+    padding: 1em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.input >span {
+    flex: none;
+    display: inline-block;
+    margin: 0 0.5em;
+}
+
+.input >input {
+    flex: 1;
+    border: none;
+    outline: none;
 }
 
 .bg_loading {
@@ -65,7 +76,6 @@ input[name="tcp"] {
 }
 
 body.ready,
-body:not(:lang(en)) :lang(en),
 body:not(.loading) .bg_loading {
     display: none;
 }
@@ -73,16 +83,21 @@ body:not(.loading) .bg_loading {
 		</style>
 	</head>
 	
-	<body class="ready" lang="ko">
+	<body class="ready">
 		<main>
             <h1>Connect to agent</h1>
             <form id="connect">
                 <p>IP Address</p>
-                <input type="text" name="ip" placeholder="IP address" autofocus required>
+                <div class="input">
+                    <span class="glyph">&#xf015;</span>
+                    <input type="text" name="ip" placeholder="IP address" autofocus required>
+                </div>
                 <p>TCP Port</p>
-                <input type="text" name="tcp" placeholder="TCP port" required>
-                <input type="submit" value="연결" lang="ko">
-                <input type="submit" value="Connect" lang="en">
+                <div class="input">
+                    <span class="glyph">&#xf542;</span>
+                    <input type="text" name="tcp" placeholder="TCP port" required>
+                </div>
+                <input type="submit" value="연결">
             </form>
             <h1>
                 <a href="http://www.corebrg.com">
