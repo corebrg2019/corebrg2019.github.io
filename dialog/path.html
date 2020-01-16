@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta charset="UTF-8">
+        <meta charset="UTF-8">
+        <meta http-equiv="Cache-Control" content="no-cache">
 		<title>Dialog @ Line</title>
 		
 		<style>
@@ -566,8 +567,11 @@ document.getElementById("close").onclick = close;
         }, function () {
             switch(this.status) {
             case 200:
-                initCustom(JSON.parse(this.responseText).customLink.split(','));
+                const settingData = JSON.parse(this.responseText);
 
+                if ("customLink" in settingData) {
+                    initCustom(settingData.customLink.split(','));
+                }
             case 204:
                 initNodeFrom();
                 

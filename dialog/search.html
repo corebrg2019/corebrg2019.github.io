@@ -16,7 +16,7 @@ body {
 }
 
 form {
-	width: 300px;
+	width: 360px;
 	padding: 20px;
 	background-color: #fff;
 	position: relative;
@@ -56,7 +56,8 @@ h2 {
 	display: flex;
 }
 
-.table li input[type="text"] {
+[name="network"],
+[name="profile"] {
 	padding: .5em;
 	width: 100%;
 	box-sizing: border-box;
@@ -158,6 +159,14 @@ body:not(.monitor) .monitor {
                                 <option value="255.255.255.252">30
                             </select>
                     </ul>
+                    <ul>
+                        <li>SNMP 프로파일</li>
+                        <li>
+                            <select name="profile">
+                                <option value="" selected>자동</option>
+                            </select>
+                        </li>
+                    </ul>
                 </div>
                 
                 <footer>
@@ -170,8 +179,12 @@ body:not(.monitor) .monitor {
 		
 		<script>
 
-var form = document.querySelector("form"),
-	mask = document.getElementById("mask_bits");
+const thread = new Worker("/js/thread.js");
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 function close() {
 	top.closeDialog(true);
@@ -203,12 +216,8 @@ if (top.account.level === 0) {
     
         document.body.classList.add("loading");
         
-		top.postRequest({
-			command: "search",
-			network: form.elements["network"].value,
-			mask: parseInt(form.elements["mask"].options[form.elements["mask"].selectedIndex].text)
-		}, function () {
-			switch (this.status) {
+        thread.onmessage = e => {
+            switch (e.data.status) {
 			case 200:
 				alert("자동 탐지 요청을 처리하고 있습니다.");
 
@@ -216,14 +225,52 @@ if (top.account.level === 0) {
 
 				break;
 			default:
-				alert(top.getMessage(this.status));
+                alert("Error!\n\n오류 코드 "+ e.data.status);
 
-				console.log(this.responseText && JSON.parse(this.responseText).error);
+                console.log(e.data.textResponse && JSON.parse(e.data.textResponse).error);
 			}
-		});
+        };
+
+		thread.postMessage({
+            action: "request",
+            request: {
+                command: "search",
+                network: form.elements["network"].value,
+                mask: parseInt(form.elements["mask"].options[form.elements["mask"].selectedIndex].text),
+                profile: form.elements["profile"].value || undefined
+            }
+        });
 	};
 
 	window.initialize = function () {
+        thread.onmessage = e => {
+            switch (e.data.status) {
+			case 200:
+                const
+                    df = document.createDocumentFragment(),
+                    profileData = JSON.parse(e.data.responseText);
+
+                for (let name in profileData) {
+                    df.appendChild(document.createElement("option")).text = name;
+                }
+
+                form.elements["profile"].appendChild(df);
+
+				break;
+			default:
+                alert("Error!\n\n오류 코드 "+ e.data.status);
+
+                console.log(e.data.textResponse && JSON.parse(e.data.textResponse).error);
+			}
+        };
+
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "profile"
+            }
+        });
 	};
 
 }) (document.querySelector("form"));

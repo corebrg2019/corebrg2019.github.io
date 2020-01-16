@@ -8,9 +8,38 @@
 
 @import "/css/index.css";
 
+body.auto header {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    transition: 0.5s;
+    background-color: #4d525a;
+}
+
+body.auto header:hover {
+    transform: none;
+}
+
+body.auto header::after {
+	content: "";
+	position: absolute; top: 50%; right: -1em;
+	width: 1em; height: 2em;
+	box-sizing: border-box;
+	background-color: red;
+	border-top-right-radius: 1em;
+	border-bottom-right-radius: 1em;
+	transform: translateY(-50%);
+}
+
+
 		</style>
-		<script src="js/google.js"></script>
+        <script src="/js/listener.js"></script>
 		<script>
+
+// public
+function setMenu(showMenu) {
+	document.body.classList[showMenu? "remove": "add"]("auto");
+} 
 
 // public
 function showDialog() {
@@ -61,19 +90,24 @@ function getMessage(status) {
 	}
 }
 
+// TODO setStatus 정의되기 전에 호출되면 오류
 function onUpdate(status, millis) {
 	setStatus(millis, status);
 }
 
-function onEvent(status, event) {
+function onEvent(status, event) {	
     if (event.level < 0) {
         alert("Notice.\n\n"+
             "관리자가 서비스를 종료하였습니다.");
 
-        //TODO
-        
+        signOut();
+
         return;
     }
+
+	if (window.isClosed) {
+		return;
+	}
 
     window.logCount++;
     
@@ -111,6 +145,38 @@ function onEvent(status, event) {
     document.body.classList.add("log");
 }
 
+function signIn (account) {
+    document.body.classList.add("authorized");
+    
+    document.getElementById("signout").title = account.username +" 로그아웃";
+
+    window.account = account;
+
+    document.title = window.localStorage.getItem("agent");
+
+    postRequest({
+        command: "get",
+        target: "setting"
+    }, function () {
+        switch (this.status) {
+        case 200:
+            window.settingData = JSON.parse(this.responseText);
+            
+            setMenu(window.settingData.menu === "true");
+
+            startThread(window.localStorage.getItem("agent"));
+
+            window.frame.src="/dashboard.html";
+
+            break;
+        default:
+            alert(getMessage(this.status));
+
+            console.log(this.responseText && JSON.parse(this.responseText).error);
+        }
+    });
+}
+
 		</script>
 		<script>
 
@@ -128,10 +194,28 @@ function postRequest(request, onResponse, timeout) {
 	xhr.send(JSON.stringify(request));
 }
 
+function onSignOut() {
+	if (confirm("Conritm.\n\n로그아웃 하겠습니까?")) {
+        window.isClosed = true;		
+        
+        signOut();
+	}
+}
+
+function signOut() {
+    document.body.classList.add("loading");
+
+    postRequest({
+        command: "signout"
+    }, function () {
+        window.location.reload();
+    }, 10000);
+}
+
 		</script>
 	</head>
 	
-	<body class="authorized">
+	<body>
 		<article class="itahm">
 			<header>
 				<div>
@@ -166,12 +250,24 @@ function postRequest(request, onResponse, timeout) {
 							이벤트
 						</li>
 						<li>
-							<a href="/information.html" id="setting" target="main">
-								<img src="/img/header/information.png">
+							<a href="/setting.html" id="setting" target="main">
+								<img src="/img/header/setting.png">
 							</a>
-							정보
-                        </li>
-                    </ul>
+							설정
+						</li>
+						<li>
+							<a href="/icon.html" id="icon" target="main">
+								<img src="/img/header/icon.png">
+							</a>
+							아이콘
+						</li>
+						<li>
+							<a id="signout">
+								<img src="/img/header/signout.png">
+							</a>
+							로그아웃
+						</li>
+					</ul>
 					<ul id="status" class="status">
 						<li class="normal"></li>
 						<li></li>
@@ -183,6 +279,9 @@ function postRequest(request, onResponse, timeout) {
 				<iframe id="frame" name="main"></iframe>
             </main>
 		</article>
+		<article class="signin">
+            <iframe id="signin" src="/connect.html"></iframe>
+        </article>
 		<div class="log">
 			<a href="/event.html" target="main">
 				<span id="count">99</span>
@@ -197,23 +296,19 @@ function postRequest(request, onResponse, timeout) {
 		<script src="/js/ITAhM.js"></script>
 		<script src="/js/object.js"></script>
         <script src="/js/icon.js"></script>
-        <script src="/js/listener.js"></script>
         
 		<script>
 
 var
-    account = {
-        username: "root",
-        level: 0
-    },
-	frame = document.getElementById("frame"),
+    frame = document.getElementById("frame"),
 	count = document.getElementById("count"),
 	dialog = document.getElementById("dialog"),
 	log = document.getElementById("log"),
 	sound = new Audio("siren.mp3"),
+	isClosed = false,
 	logCount = 0;
 
-window.localStorage.setItem("agent", "http://127.0.0.1:2014");
+document.getElementById("signout").addEventListener("click", onSignOut);
 
 document.querySelector("div.log").onclick = function () {
 	selectMenu("event");
@@ -251,42 +346,29 @@ document.querySelector("div.log").onclick = function () {
 }) (document.getElementById("status"));
 
 (function (list) {
+	function remove(a) {
+		a.classList.remove("selected");
+	}
+
+	function addEvent(a) {
+		a.onclick = onClick;
+	}
+
 	function onClick(e) {
-		[].forEach.call(list, a => a.classList.remove("selected"));
+        window.sessionStorage.removeItem("stage_id");
+        
+		[].forEach.call(list, remove);
 
 		this.classList.add("selected");
 	}
 	
-	[].forEach.call(list, a => {
-        if (!a.onclick) {
-            a.onclick = onClick;
-        }
-    });
+	[].forEach.call(list, addEvent);
 
 	window.selectMenu = id => {
 		document.getElementById(id).click();
 	};
 }) (document.querySelector("header").querySelectorAll("a"));
 
-postRequest({
-    command: "get",
-    target: "setting"
-}, function () {
-    switch (this.status) {
-    case 200:
-        window.settingData = JSON.parse(this.responseText);
-        
-        startThread(window.localStorage.getItem("agent"));
-
-        window.frame.src="/dashboard.html";
-
-        break;
-    default:
-        alert(getMessage(this.status));
-
-        console.log(this.responseText && JSON.parse(this.responseText).error);
-    }
-});
 		</script>
 	
 	</body>

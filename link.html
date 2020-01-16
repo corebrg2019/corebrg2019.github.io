@@ -579,13 +579,15 @@ function initSetting(e) {
             df = document.createDocumentFragment(),
             customs = JSON.parse(e.data.responseText).customLink;
         
-        window.customData = customs.split(",");
-    
-        window.customData.forEach(function (custom) {
-            df.appendChild(document.createElement("li")).textContent = custom;
-        });
+        if (customs) {
+            window.customData = customs.split(",");
         
-        window.header.appendChild(df);
+            window.customData.forEach(function (custom) {
+                df.appendChild(document.createElement("li")).textContent = custom;
+            });
+            
+            window.header.appendChild(df);
+        }
     case 204:
         thread.onmessage = initLink;
         

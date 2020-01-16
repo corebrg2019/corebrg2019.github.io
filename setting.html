@@ -7,10 +7,11 @@
 		<title>Setting @ ITAhM</title>
 		
 		<style>
-@import "css/style.css";
+@import "/css/style.css";
+@import "/css/fa.css";
 
 body {
-	width: 1024px;
+	max-width: 1024px;
 	padding: 10px;
 	margin: 0 auto;
 }
@@ -145,6 +146,11 @@ body:not(.loading) .bg_loading {
 	vertical-align: bottom;
 }
 
+span.logo {
+    font: 24px "Font Awesome 5 Free";
+    color: #0084ff;
+}
+
 .button {
 	border:none;
 	display:inline-block;
@@ -254,6 +260,21 @@ function createItem(src, key, data, func) {
 	return li;
 }
 
+function showMessage(data) {
+    switch (data.status) {
+    case 401:
+        alert("Notice.\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert("Error!\n\n"+ "오류코드: "+ data.status);
+    }
+
+    try {
+        console.log(JSON.parse(data.responseText).error);
+    } catch (e) {}
+}
+
 		</script>
 	</head>
 	
@@ -276,6 +297,9 @@ function createItem(src, key, data, func) {
 			</p>
 			<p>
 				전일 디스크 사용량 : <span id="usage"></span>
+            </p>
+            <p>
+				데이터베이스 연결 : <span id="max_conn"></span>
 			</p>
 			<p>
 				관리 리소스 갯수 : <span id="resource"></span>
@@ -388,7 +412,7 @@ function createItem(src, key, data, func) {
 			<p>
 				<form id="link_color">
 					기본 연결선 색 :
-					<input type="color" name="color" value="#fff">
+					<input type="color" name="color" value="#ffffff">
 					<input type="submit" value="적용" class="root">
 				</form>
             </p>
@@ -494,16 +518,32 @@ function createItem(src, key, data, func) {
 			<input type="submit" value="이동">
 		</form>
 		<h2>
-            <img width="24px" height="24px" src="/img/warning.png" class="logo">
-            에이전트
+            <img width="24px" height="24px" src="/img/backup.png" class="logo">
+            백업
         </h2>
-        <form class="box" id="service">
+        <form class="box" id="backup">
+            <input type=submit value="설정 백업">
+        </form>
+        <h2>
+            <span class="logo">
+                &#xf05e;
+            </span>
+            서비스
+        </h2>
+        <form class="box" id="stop">
             <input type=submit value="서비스 중지">
         </form>
 		<script src="js/ITAhM.js"></script>
 		<script src="js/object.js"></script>
 		<script src="js/md5.js"></script>
 		<script>
+
+var thread = new Worker("/js/thread.js");
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 if (top.account.level > 0) {
 	[].forEach.call(document.querySelectorAll(".root"),
@@ -524,6 +564,7 @@ if (top.account.level > 0) {
 				document.getElementById("java").textContent = information.java;
 				document.getElementById("version").textContent = information.version;
 				document.getElementById("resource").textContent = information.resource;
+                document.getElementById("max_conn").textContent = information.maxConnection;
 				document.getElementById("usage").textContent
                     = information.usage && ITAhM.util.toBytesString(information.usage) || "제공하지 않음.";
 				document.getElementById("space").textContent = ITAhM.util.toBytesString(information.space);
@@ -574,7 +615,7 @@ if (top.account.level > 0) {
             thread.postMessage([window.localStorage.getItem("agent"), {
                 command: "set",
                 target: "config",
-                key: "snmpServer"
+                key: "smtpServer"
             }]);
         }
     }
@@ -600,7 +641,7 @@ if (top.account.level > 0) {
         thread.postMessage([window.localStorage.getItem("agent"), {
             command: "set",
             target: "config",
-            key: "snmpServer",
+            key: "smtpServer",
             value: {
                 server: container.elements["server"].value,
                 user: container.elements["username"].value,
@@ -1048,33 +1089,63 @@ if (top.account.level > 0) {
 	form.onsubmit = function (e) {
 		e.preventDefault();
     
-        if (!confirm("Confirm.\n\n이 명령은 되돌릴 수 없습니다.\n에이전트 서비스 중지를 요청하겠습니까?")) {
-            return;
-        }
-    
-        top.postRequest({
-            command: "stop"
-        }, function () {
-            switch (this.status) {
+        document.body.classList.add("loading");
+
+        window.thread.onmessage = e => {
+            switch (e.data.status) {
             case 200:
-                console.log("Notice.\n\n에이전트 서비스 중지를 요청하였습니다.");
-                
-                break;
-            case 503:
-            console.log("Notice.\n\n에이전트 서비스가 실행되고 있지 않습니다.");
-                
+                alert("Information.\n\n"+
+                    "백업 정상.");
+
+                document.body.classList.remove("loading");
+
                 break;
             default:
-                alert(top.getMessage(this.status));
-
-                console.log(this.responseText && JSON.parse(this.responseText).error);
+                alert("Error!\n\n"+
+                    "오류코드: "+ e.data.status);
+                
+                try {
+                    console.log(JSON.parse(e.data.responseText).error);
+                } catch (e) {}
             }
+        };
 
-            document.body.classList.remove("loading");
+        window.thread.postMessage({
+            action: "request",
+            request: {
+                command: "backup",
+                service: "nms"
+            }
         });
 	};
-}) (document.getElementById("service"));
+}) (document.getElementById("backup"));
 
+(function(form) {
+	form.onsubmit = function (e) {
+		e.preventDefault();
+    
+        document.body.classList.add("loading");
+
+        window.thread.onmessage = e => {
+            switch (e.data.status) {
+            case 200:
+                top.location.replace("/service.html");
+
+                break;
+            default:
+                showMessage(e.data);
+            }
+        };
+
+        window.thread.postMessage({
+            action: "request",
+            request: {
+                command: "stop",
+                service: "nms"
+            }
+        });
+	};
+}) (document.getElementById("stop"));
 		</script>
 	
 	</body>

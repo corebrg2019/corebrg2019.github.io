@@ -118,6 +118,11 @@ body.loading {
 	pointer-events: none; 
 }
 
+optgroup::before {
+    content: attr(label);
+    display: block;
+}
+
 		</style>
 		
 		<script>
@@ -182,10 +187,12 @@ function trimLabel(labels) {
                         <li>모니터링</li>
                         <li>
                             <select name="monitor" disabled>
-                                <option value="none" selected>없음
-                                <option value="snmp">SNMP
-                                <option value="icmp">ICMP
-                                <option value="TCP">TCP
+                                <option value="" selected>없음</option>
+                                <optgroup label="SNMP">
+                                    <option value="snmp">auto</option>
+                                </optgroup>
+                                <option value="icmp">ICMP</option>
+                                <option value="tcp">TCP</option>
                             </select>
                         </li>
                     </ul>
@@ -205,8 +212,13 @@ function trimLabel(labels) {
         <script src="/js/icon.js"></script>
 		<script>
 
-var monitor = "none",
-	custom = {};
+const
+    thread = new Worker("/js/thread.js");
+
+thread.postMessage({
+    action: "initialize",
+    agent: window.localStorage.getItem("agent")
+});
 
 function close() {
 	top.closeDialog(true);
@@ -358,7 +370,7 @@ document.getElementById("close").onclick = close;
             ip: form.elements["ip"].value
         };
 
-        if (this.value !== "none") {
+        if (this.value) {
             request.protocol = this.value;
         }
 
@@ -389,37 +401,75 @@ document.getElementById("close").onclick = close;
         opener = this;
         nodeID = id;
 
-        top.postRequest({
-            command: "get",
-            target: "setting",
-            key: "customNode",
-        }, function () {
-            switch(this.status) {
-                case 200:
-                    initCustom(JSON.parse(this.responseText).customNode.split(','));
+        thread.onmessage = e => {
+            switch(e.data.status) {
+            case 200:
+                const settingData = JSON.parse(e.data.responseText);
 
-                case 204:
-                    buildType();
-                    
-                    break;
-                default:
-                    alert(top.getMessage(this.status));
+                if ("custom" in settingData) {
+                    initCustom(settingData.custom.split(','));
+                }
+            case 204:
+                initProfile();
+                
+                break;
+            default:
+                alert(top.getMessage(e.data.status));
 
-                    console.log(this.responseText && JSON.parse(this.responseText).error);
+                console.log(e.data.responseText && JSON.parse(e.data.responseText).error);
+            }
+        };
+
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "setting",
+                key: "custom"
             }
         });
     };
 
+    function initProfile() {
+        thread.onmessage = e => {
+            switch(e.data.status) {
+            case 200:
+                const
+                    df = document.createDocumentFragment(),
+                    profileData = JSON.parse(e.data.responseText);
+
+                for (let name in profileData) {
+                    df.appendChild(document.createElement("option")).text = name;
+                }
+
+                document.querySelector("optgroup").appendChild(df);
+
+                buildType();
+
+                break;
+            default:
+                alert(top.getMessage(e.data.status));
+
+                console.log(e.data.responseText && JSON.parse(e.data.responseText).error);
+            }
+        };
+
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "profile"
+            }
+        });
+    }
+
     function buildType() {
-        top.postRequest({
-            command: "get",
-            target: "icon"
-        }, function () {
-            switch (this.status) {
+        thread.onmessage = e => {
+            switch (e.data.status) {
             case 200:
                 const
                     iconData = ITAhM.iconData,
-                    customData = JSON.parse(this.responseText),
+                    customData = JSON.parse(e.data.responseText),
                     df = document.createDocumentFragment(),
                     group = {};
                 let 
@@ -460,23 +510,27 @@ document.getElementById("close").onclick = close;
                 break;
 
             default:
-                alert(top.getMessage(this.status));
+                alert(top.getMessage(e.data.status));
 
-                console.log(this.responseText && JSON.parse(this.responseText).error);
+                console.log(e.data.responseText && JSON.parse(e.data.responseText).error);
+            }
+        };
+
+        thread.postMessage({
+            action: "request",
+            request: {
+                command: "get",
+                target: "icon"
             }
         });
     }
 
     function initDialog() {
 		if (nodeID) {
-			top.postRequest({
-				command: "get",
-                target: "node",
-				id: nodeID
-			}, function () {
-				switch (this.status) {
+			thread.onmessage = e => {
+				switch (e.data.status) {
 				case 200:
-					window.node = JSON.parse(this.responseText);
+					window.node = JSON.parse(e.data.responseText);
 
 					if (!node.type) {
 						node.type = "unknown";
@@ -499,20 +553,7 @@ document.getElementById("close").onclick = close;
 						}
 					}
 
-					if (node.protocol) {
-                        switch(node.protocol) {
-                        case "icmp":
-                        case "tcp":
-                            form.elements["monitor"].value = node.protocol;
-
-                            break;
-                        default:
-                            form.elements["monitor"].value = "snmp"
-                        }
-					}
-					else {
-						form.elements["monitor"].value = "none";
-					}
+                    form.elements["monitor"].value = node.protocol || "";
 						
 					// ip는 한번 지정하면 변경할 수 없다.
 					if (node.ip) {
@@ -524,13 +565,22 @@ document.getElementById("close").onclick = close;
 					break;
 
 				default:
-					alert(top.getMessage(this.status));
+					alert(top.getMessage(e.data.status));
 
-					console.log(this.responseText && JSON.parse(this.responseText).error);
+					console.log(e.data.responseText && JSON.parse(e.data.responseText).error);
 				}
 
 				document.body.classList.remove("loading");
-			});
+			};
+
+            thread.postMessage({
+                action: "request",
+                request: {
+                    command: "get",
+                    target: "node",
+                    id: nodeID
+                }
+            });
 		}
 		else {
 			form.elements["type"].value = "unknown";

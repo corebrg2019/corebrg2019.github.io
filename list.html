@@ -388,7 +388,19 @@ function createRow(id, node) {
 	
 	row.appendChild(type); // N.3
 	
-	row.appendChild(document.createElement("li")).textContent = node.protocol || ""; // N.4
+	row.appendChild(document.createElement("li")).textContent = (protocol => {
+         if (protocol) {
+            switch (protocol.toUpperCase()) {
+            case "ICMP":
+            case "TCP":
+                return protocol.toUpperCase();
+            default:
+                return "SNMP";
+            }
+         } else {
+             return "";
+         }
+    }) (node.protocol); // N.4
 	
 	if (window.customs) {
 		window.customs.forEach(function (custom) {
