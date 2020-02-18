@@ -231,7 +231,7 @@ function hasClass(e, className) {
 }
 
 function findParentFromStage(id) {
-	for (let tmp; id; parent = tmp) {
+	for (let tmp; id; id = tmp) {
 		if (!(id in parent.positionData)) {
 			return;
 		}
@@ -608,7 +608,7 @@ function initialize() {
 	for (let id in window.nodeData) {
         pos = parent.positionData[id];
 
-        if (!pos) {console.log("?");
+        if (!pos) {
             pos = {
                 x: 0,
                 y: 0,
@@ -616,7 +616,7 @@ function initialize() {
             };
 
             parent.positionData[id] = pos;
-        } else if (pos.parent && !(pos.parent in window.nodeData)) {console.log("!");
+        } else if (pos.parent && !(pos.parent in window.nodeData)) {
             pos.parent = window.upper;
         }
 
