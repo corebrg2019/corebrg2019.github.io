@@ -15,8 +15,8 @@ canvas {
 }
 
         </style>
-        <script src="/js/three.js"></script>
-        <script src="/js/OrbitControls.js"></script>
+        <script src="/js/import/three.js"></script>
+        <script src="/js/import/OrbitControls.js"></script>
         <script>
 //public
 
@@ -128,22 +128,43 @@ function drawPath(args) {
     }
 
     const
+        g = new THREE.Object3D(),
         v1 = new THREE.Vector3(posFrom.x, posFrom.z, posFrom.y),
         v2 = new THREE.Vector3(posTo.x, posTo.z, posTo.y),
+        vkf = new THREE.VectorKeyframeTrack('.position', [0, 0.5], [v1.x, v1.y, v1.z, v2.x, v2.y, v2.z] ),
+        clip = new THREE.AnimationClip('Action', 0.5, [vkf]),
         link = new THREE.Mesh(new THREE.CylinderBufferGeometry(LINE_RADIUS, LINE_RADIUS, v1.distanceTo(v2), 32, 1, true),
             new THREE.MeshLambertMaterial({
-                color: 0x00ff00
-            }));
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.5,
+                side:THREE.DoubleSide
+            })),
+        gauge = new THREE.Mesh(new THREE.CylinderBufferGeometry(LINE_RADIUS, LINE_RADIUS, 10, 32, 1),
+            new THREE.MeshLambertMaterial({
+                color: 0xaaaaaa
+            })),
+        mixer = new THREE.AnimationMixer(gauge);
 
     matrix.lookAt(v1, v2, yAxis);
     matrix.multiply(rotationX);
 
-    link.applyMatrix(matrix);
+    link.applyMatrix4(matrix);
 
     link.position.copy(v1);
     link.position.lerp(v2, 0.5);
 
-    scene.add(link);
+    gauge.applyMatrix4(matrix);
+    gauge.position.copy(v1);
+
+    mixer.clipAction(clip).setDuration(Math.random() *10).startAt(Math.random()).play();
+    
+    $.mixerArray.push(mixer);
+
+    g.add(link);
+    g.add(gauge);
+
+    scene.add(g);
 }
 
 function setNode(id, status) {
@@ -161,7 +182,7 @@ function lookAt(pos) {
         </script>
         <script>
 
-function render() {
+function render(t) {
     if (!controls.enabled) {
         const pos = camera.position;
         
@@ -183,17 +204,19 @@ function render() {
 
     renderer.render(scene, camera);
 
+    animate(t);
+
     requestAnimationFrame(render);
 }
 
 function animate(t) {
-    const tick = clock.getDelta();
+    const dt = clock.getDelta();
 
     markerList.forEach(marker => {
         marker.material.opacity = Math.round((t %1000) /100) /10;
     });
 
-    requestAnimationFrame(animate);
+    $.mixerArray.forEach(mixer => mixer.update(dt));
 }
 
 function onResize() {
@@ -369,7 +392,8 @@ function getMesh(icon) {
             <div class="bg_loading"></div>
         <script>
 const $ = {
-    meshArray: []
+    meshArray: [],
+    mixerArray: []
 };
 
 const
@@ -400,7 +424,7 @@ const
     }),
     scene = new THREE.Scene,
     camera = new THREE.PerspectiveCamera(60, 1, 1, 2000), // 시야각이 클수록 외곡
-    controls = new THREE.OrbitControls(camera),
+    controls = new THREE.OrbitControls(camera, renderer.domElement),
     loader = new THREE.TextureLoader(),
     clock = new THREE.Clock,
     matrix = new THREE.Matrix4(),
@@ -429,10 +453,14 @@ controls.maxDistance = 1600;
 controls.maxPolarAngle = Math.PI /2 -0.1;
 
 light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 1, 1);
+light.position.set(100, 100, 100);
 scene.add(light);
 
-renderer.setClearColor(0xffffff, 0);
+light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+light.position.set(0, 100, 0);
+scene.add(light);
+
+//renderer.setClearColor(0xffffff, 0);
 
 camera.position.set(0, 300, 500);
 
