@@ -201,7 +201,7 @@ if (top.account.level === 0) {
             case 200:
                 opener.location.reload();
                 
-                top.closeDialog();
+                close();
 
                 document.body.classList.remove("loading");
 
@@ -232,7 +232,7 @@ if (top.account.level === 0) {
                     level: parseInt(form.elements["level"].value)
                 }
             };
-            console.log(document.body.classList);
+            
         if (document.body.classList.contains("edit")) {
             // 수정
             if (form.elements["password"].value !== form.elements["password2"].value) {
@@ -282,6 +282,8 @@ if (top.account.level === 0) {
                 
                 document.body.classList.remove("loading");
 
+                close();
+                
                 break;
             case 409:
 
