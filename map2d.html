@@ -246,7 +246,7 @@ function onDragMove(e) {
 function createNodeTitle(node) {
 	const title = [];
     
-	if (node.ip) {
+    if (node.ip) {
 		title.push("IP 주소 : "+ node.ip);
 	}
 
@@ -317,7 +317,7 @@ function onMouseOver(e) {
         this.appendChild(svgTitle);
 	}
 
-	top.postRequest({
+	$.request.execute({
         command: "get",
         target: "node",
 		id: Number(this.id),
@@ -333,15 +333,13 @@ function onMouseOver(e) {
             
 			break;
 		default:
-			console.log(top.getMessage(this.status));
-
-			console.log(this.responseText && JSON.parse(this.responseText).error);
+			showMessage(this);
 		}
 	});
 }
 
 function onSelectInterface(e) {
-    window.sessionStorage.setItem("previous", "/dashboard.html");
+    window.sessionStorage.setItem("previous", "/itahm.html");
     window.sessionStorage.setItem("node_id", this.dataset.id);
     window.sessionStorage.setItem("index", this.dataset.index);
     window.sessionStorage.setItem("chart", "/chart/throughput.html");
@@ -411,7 +409,11 @@ function addNode(args) {
 	window.nodeSVGMap[String(node.id)] = svgDevice;
     
 	if ("protocol" in node) {
-		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
+        if ("status" in node && !node.status) {
+            svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.shutdown || icon.src);
+        } else {
+            svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
+        }
 	}
 	else if (icon.group === "group") {
 		svgIcon.setAttributeNS(xlinkNS, "xlink:href", icon.src);
@@ -643,6 +645,21 @@ function lookAt (pos) {
     window.animation = highlight;
 }
 
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert("Error!\n\n"+ "오류코드: "+ xhr.status);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
 /**public**/
 
 function start () {
@@ -668,7 +685,7 @@ function display(name) {
             <defs>
                 <circle r="35" id="circle"></circle>
                 <marker id="arrow" viewBox="0 0 10 5" refX="5" refY="3" markerWidth="10" markerHeight="5">
-                    <path d="M5 0L10 5L0 5z" fill="#dddddd" />
+                    <path d="M5 0L10 5L0 5z" fill="red" />
                 </marker>
             </defs>
             <g id="transform" transform="translate(0, 0) scale(1, 1) translate(0, 0)">
@@ -678,10 +695,14 @@ function display(name) {
         </svg>
 
         <script src="js/ITAhM.js"></script>
-		<script src="js/Draggable.js"></script>
+        <script src="js/Draggable.js"></script>
+        <script src="js/request.js"></script>
         <script>
 
 const
+    $ = {
+        request: new Request()
+    },
     TEXT_TRIM = 20,
 	LINE_WIDTH = 2,
 	BAR_WIDTH = 10,
@@ -708,8 +729,7 @@ var
 	lineSVGMap = {},
     nodeSVGMap = {},
 	scale = 1,
-    click = false,
-    thread;
+    click = false;
 
 new Draggable(window.mapCanvas);
 

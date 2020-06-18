@@ -2,251 +2,184 @@ var ITAhM = ITAhM || {};
 
 ITAhM.iconData = {
     "server": {
+        type: "server",
         "group": "server",
         "src": "/img/svg/server.svg",
-        "disabled": "/img/svg/disabled/server.svg",
-        unit: 1,
-        color: "",
-        texture: "/img/3d/server-1u.png",
-        top: "/img/3d/server-top.png"
+        "disabled": "/img/svg/disabled/server.svg"
     },
     "mainframe": {
+        type: "mainframe",
         "group": "server",
-
         "src": "/img/svg/mainframe.svg",
-        "disabled": "/img/svg/disabled/mainframe.svg",
-        unit: 1,
-        color: "",
-        texture: "/img/3d/server-1u.png",
-        top: "/img/3d/server-top.png"
+        "disabled": "/img/svg/disabled/mainframe.svg"
     },
     "database": {
+        type: "database",
         "group": "server",
         "src": "/img/svg/database.svg",
-        "disabled": "/img/svg/disabled/database.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/database.svg"
     },
     "storage": {
+        type: "storage",
         "group": "server",
         "src": "/img/svg/storage.svg",
-        "disabled": "/img/svg/disabled/storage.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/storage.png",
-        top: "/img/3d/storage-top.png"
+        "disabled": "/img/svg/disabled/storage.svg"
     },
     "network": {
+        type: "network",
         "group": "network",
         "src": "/img/svg/network.svg",
-        "disabled": "/img/svg/disabled/network.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/network.svg"
     },
     "nms": {
+        type: "nms",
         "group": "network",
         "src": "/img/svg/nms.svg",
-        "disabled": "/img/svg/disabled/nms.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/nms.svg"
     },
     "workgroup switch": {
+        type: "workgroup switch",
         "group": "network",
         "src": "/img/svg/workgroup.svg",
-        "disabled": "/img/svg/disabled/workgroup.svg",
-        "texture": "/img/3d/wg.png",
-        top: "/img/3d/wg-top.png",
-        color: "",
-        unit: 2
+        "disabled": "/img/svg/disabled/workgroup.svg"
     },
     "layer4 switch": {
+        type: "layer4 switch",
         "group": "network",
         "src": "/img/svg/l4switch.svg",
-        "disabled": "/img/svg/disabled/l4switch.svg",
-        unit: 6,
-        color: "",
-        texture: "/img/3d/l4.png",
-        top: "/img/3d/ace-top.png"
+        "disabled": "/img/svg/disabled/l4switch.svg"
     },
     "layer3 switch": {
+        type: "layer3 switch",
         "group": "network",
         "src": "/img/svg/l3switch.svg",
-        "disabled": "/img/svg/disabled/l3switch.svg",
-        unit: 6,
-        color: "",
-        texture: "/img/3d/l3.png",
-        top: "/img/3d/routing-top.png"
+        "disabled": "/img/svg/disabled/l3switch.svg"
     },
     "router": {
+        type: "router",
         "group": "network",
         "src": "/img/svg/router.svg",
-        "disabled": "/img/svg/disabled/router.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/router.png",
-        top: "/img/3d/router-top.png"
+        "disabled": "/img/svg/disabled/router.svg"
     },
     "firewall": {
+        type: "firewall",
         "group": "network",
         "src": "/img/svg/firewall.svg",
-        "disabled": "/img/svg/disabled/firewall.svg",
-        texture: "/img/3d/firewall.png",
-        top: "/img/3d/firewall-top.png",
-        color: "",
-        unit: 4
+        "disabled": "/img/svg/disabled/firewall.svg"
     },
     "vpn gateway": {
+        type: "vpn gateway",
         "group": "network",
         "src": "/img/svg/vpn.svg",
-        "disabled": "/img/svg/disabled/vpn.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/vpn.svg"
     },
     "vpn concentrator": {
+        type: "vpn concentrator",
         "group": "network",
         "src": "/img/svg/concentrator.svg",
-        "disabled": "/img/svg/disabled/concentrator.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/concentrator.png",
-        top: "/img/3d/concentrator-top.png"
+        "disabled": "/img/svg/disabled/concentrator.svg"
     },
     "wireless": {
+        type: "wireless",
         "group": "network",
         "src": "/img/svg/wireless.svg",
-        "disabled": "/img/svg/disabled/wireless.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/wireless.svg"
     },
     "accesspoint": {
+        type: "accesspoint",
         "group": "network",
         "src": "/img/svg/accesspoint.svg",
-        "disabled": "/img/svg/disabled/accesspoint.svg",
-        unit: 1,
-        color: "",
-        texture: "/img/3d/wifi.png",
-        top: "/img/3d/wifi-top.png"
+        "disabled": "/img/svg/disabled/accesspoint.svg"
     },
     "accelerator": {
+        type: "accelerator",
         "group": "network",
         "src": "/img/svg/accelerator.svg",
-        "disabled": "/img/svg/disabled/accelerator.svg",
-        unit: 4,
-        color: "",
-        texture: "/img/3d/accelerator.png",
-        top: "/img/3d/accelerator-top.png"
+        "disabled": "/img/svg/disabled/accelerator.svg"
+    },
+    "idc": {
+        type: "idc",
+        "group": "group",
+        "src": "/img/svg/idc.svg",
+        "disabled": "/img/svg/disabled/idc.svg",
+        "shutdown": "/img/svg/shutdown/idc.svg"
     },
     "nac": {
+        type: "nac",
         "group": "network",
         "src": "/img/svg/nac.svg",
-        "disabled": "/img/svg/disabled/nac.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/nac.svg"
     },
     "printer": {
+        type: "printer",
     	"group": "etc",
     	"src": "/img/svg/printer.svg",
-        "disabled": "/img/svg/disabled/printer.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/printer.png",
-        top: "/img/3d/printer-top.png"
+        "disabled": "/img/svg/disabled/printer.svg"
     },
     "office": {
+        type: "office",
         "group": "group",
         "src": "/img/svg/office.svg",
-        "disabled": "/img/svg/disabled/office.svg",
-        texture: "/img/3d/office.png",
-        color: 0x333333,
-        unit: 8
+        "disabled": "/img/svg/disabled/office.svg"
     },
     "cloud": {
+        type: "cloud",
         "group": "etc",
         "src": "/img/svg/cloud.svg",
-        "disabled": "/img/svg/disabled/cloud.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/cloud.png",
-        top: "/img/3d/cloud-top.png"
+        "disabled": "/img/svg/disabled/cloud.svg"
     },
     "unknown": {
+        type: "unknown",
         "group": "etc",
         "src": "/img/svg/unknown.svg",
-        "disabled": "/img/svg/disabled/unknown.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/unknown.svg"
     },
     "phone": {
+        type: "phone",
         "group": "etc",
         "src": "/img/svg/phone.svg",
-        "disabled": "/img/svg/disabled/phone.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/phone.svg"
     },
     "laptop": {
+        type: "laptop",
         "group": "etc",
         "src": "/img/svg/laptop.svg",
         "disabled": "/img/svg/disabled/laptop.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
     },
     "cctv": {
+        type: "cctv",
         "group": "etc",
         "src": "/img/svg/camera.svg",
-        "disabled": "/img/svg/disabled/camera.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/camera.svg"
     },
     "ups": {
+        type: "ups",
         "group": "etc",
         "src": "/img/svg/ups.svg",
-        "disabled": "/img/svg/disabled/ups.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/ups.svg"
     },
     "video recorder": {
+        type: "video recorder",
     	"group": "etc",
         "src": "/img/svg/videorecorder.svg",
-        "disabled": "/img/svg/disabled/videorecorder.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/videorecorder.svg"
     },
     "security": {
+        type: "security",
     	"group": "etc",
         "src": "/img/svg/security.svg",
-        "disabled": "/img/svg/disabled/security.svg",
-        unit: 2,
-        color: "",
-        texture: "/img/3d/security.png",
-        top: "/img/3d/security-top.png"
+        "disabled": "/img/svg/disabled/security.svg"
     },
     "group": {
+        type: "group",
         "group": "group",
         "src": "/img/svg/group.svg",
-        "disabled": "/img/svg/disabled/group.svg",
-        unit: 1,
-        color: "0xdddddd",
-        texture: ""
+        "disabled": "/img/svg/disabled/group.svg"
     },
     "application": {
+        type: "application",
         "group": "application",
         "src": "/img/svg/application.svg",
-        "disabled": "/img/svg/disabled/application.svg",
-        unit: 1,
-        color: "",
-        texture: "/img/3d/app.png",
-        top: "/img/3d/app-top.png"
+        "disabled": "/img/svg/disabled/application.svg"
     }
 };

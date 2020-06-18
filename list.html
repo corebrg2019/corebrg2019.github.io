@@ -7,6 +7,7 @@
 		
 		<style>
 @import "css/itahm.css";
+@import "css/fa.css";
 
 body {
 	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
@@ -61,14 +62,19 @@ button >img {
 	height: 1em; width: 1em;
 }
 
-#sort::after {
-	content: "▲";
+.sort::after {
+    font-family: "Font Awesome 5 Free";
+    content: "\f0dc";
 	cursor: pointer;
-	position: absolute; right: 3px;
+    position: absolute; right: 3px;
 }
 
-#sort.reverse::after {
-	content: "▼";
+.sort.sorted::after {
+	content: "\f0de";
+}
+
+.sort.ascending::after {
+	content: "\f0dd";
 }
 
 #header >li:not(:last-child) {
@@ -195,22 +201,6 @@ label {
 	background-color: #ffc;
 }
 
-footer {
-	float: none;
-	color: #fcba30;
-	font-weight: bold;
-	text-align: right;
-	padding: 1em;
-}
-
-#save {
-	cursor: pointer;
-}
-
-#save:hover {
-	color: #fff;
-}
-
 #count {
 	font-size: 30px; font-weight: bold; color: #fff;
 	display: inline-block;
@@ -244,6 +234,22 @@ footer {
 
 .selector img {
 	pointer-events: none;
+}
+
+.glyph {
+    font: 2em "Font Awesome 5 Free";
+    cursor: pointer;
+    color: #ffffff;
+    
+}
+
+.glyph:hover {
+    color: #fcba30;
+    transition: color 0.5s linear;
+}
+
+aside form input {
+    font-family: "Font Awesome 5 Free";
 }
 
 @keyframes grow {
@@ -433,7 +439,7 @@ function createRow(id, node) {
 		if ("status" in node && !node.status) {
 			row.dataset.shutdown = true;
 		}
-		else if ("critical" in node && !node.critical) {
+		else if ("critical" in node && node.critical) {
 			row.dataset.critical = true;
 		}
 		else {
@@ -557,6 +563,21 @@ function forEach(a, f) {
 	}
 }
 
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
 		</script>
 		
 	</head>
@@ -575,12 +596,13 @@ function forEach(a, f) {
 								<option selected>모두 보기
 							</optgroup>
 						</select>
-					</div>
+                    </div>
+                    <span class="glyph" id="export" title="CSV 내보내기">&#xf019;</span>
 				</nav>
 				<form>
-					<input type="text" name="keyword" placeholder="IP, Type, Name">
-					<button class="submit"><img src="/img/btn/search_label.png">찾기</button>
-					<button class="reset"><img src="/img/btn/cancel.png">초기화</button>
+                    <input type="text" name="keyword" placeholder="IP, Type, Name">
+                    <input type="submit" value="&#xf002; 찾기">
+					<input type="reset" value="&#xf2f9; 초기화">
 				</form>
 			</aside>
 			
@@ -605,7 +627,7 @@ function forEach(a, f) {
 								<img src="img/all.png">
 							</p>
 						</div>
-					<li id="sort">IP
+					<li id="sort" class="sort">IP
 					<li>Type
 					<li>Monitor
 					<li>Name
@@ -613,12 +635,6 @@ function forEach(a, f) {
 			</header>
 			
 			<div id="list"></div>
-			<footer>
-				<a id="save" title="CSV 파일로 저장">
-					<img src="/img/download.png" width="12" height="12">
-					Download
-				</a>
-			</footer>
 		</article>
 		
 		<div class="bg_loading"></div>
@@ -626,10 +642,14 @@ function forEach(a, f) {
         <script src="js/ITAhM.js"></script>
         <script src="js/icon.js"></script>
 		<script src="js/object.js"></script>
+		<script src="/js/request.js"></script>
 		<script>
 
+const $ = {
+        request: new Request()
+    };
+
 var
-    thread = new Worker("/js/thread.js"),
 	header = document.getElementById("header"),
 	label = document.getElementById("label"),
 	list = document.getElementById("list"),
@@ -641,11 +661,6 @@ var
 		"": []
 	},
 	customs, selected;
-
-thread.postMessage({
-    action: "initialize",
-    agent: window.localStorage.getItem("agent")
-});
 
 label.onchange = function () {
 	const
@@ -677,12 +692,14 @@ document.getElementById("critical").onclick = onSelectStatus.bind(window, "img/s
 document.getElementById("normal").onclick = onSelectStatus.bind(window, "img/normal.png", "normal");
 document.getElementById("disabled").onclick = onSelectStatus.bind(window, "img/disabled.png", "disabled");
 document.getElementById("all").onclick = onSelectStatus.bind(window, "img/all.png", "");
-document.getElementById("save").onclick = onSave;
+document.getElementById("export").onclick = onSave;
 
 document.getElementById("sort").onclick = function (e) {
 	const
 		reverse = this.classList.toggle("reverse"),
 		df = document.createDocumentFragment();
+
+    this.classList.add("sorted");
 
 	[].slice.call(window.list.children).sort(reverse?
 		function (a, b) {
@@ -729,7 +746,7 @@ document.getElementById("sort").onclick = function (e) {
 
 (function (form) {
 	// 키워드로 필터링
-	form.querySelector("button.submit").onclick = form.onsubmit = function (e) {
+	form.onsubmit = function (e) {
 		e.preventDefault();
 		
 		document.body.classList.add("loading", "keyword");
@@ -767,7 +784,7 @@ document.getElementById("sort").onclick = function (e) {
 		document.getElementById("count").textContent = count();
 	};
 
-	form.querySelector("button.reset").onclick =  function (e) {
+	form.onreset =  function (e) {
 		e.preventDefault();
 	
 		form.elements["keyword"].value = "";
@@ -796,15 +813,15 @@ document.getElementById("sort").onclick = function (e) {
 }) (document.querySelector("form"));
 
 function initSetting(e) {
-    switch(e.data.status) {
+    switch(this.status) {
     case 200:
-        window.settingData = JSON.parse(e.data.responseText);
+        window.settingData = JSON.parse(this.responseText);
         
         initialize();
 
         break;
     case -1:
-        console.trace(e.data.exception);
+        console.trace(this.exception);
     default:
         alert(top.getMessage(this.status));
 
@@ -813,70 +830,48 @@ function initSetting(e) {
 }
 
 function initIcon(e) {
-    switch(e.data.status) {
+    switch(this.status) {
     case 200:
-        const iconData = JSON.parse(e.data.responseText);
+        const iconData = JSON.parse(this.responseText);
 
         for (let type in iconData) {
             window.iconData[type] = iconData[type];
         }
         
-        thread.onmessage = initSetting;
-            
-        thread.postMessage({
-            action: "request",
-            request: {
-                "command": "get",
-                "target": "setting"
-            }
-        });
+        $.request.execute({
+            "command": "get",
+            "target": "setting"
+        }, initSetting);
         
         break;
-    case -1:
-        console.trace(e.data.exception);
     default:
-        alert(top.getMessage(this.status));
-
-        console.log(this.responseText && JSON.parse(this.responseText).error);
+        showMessage(this);
     }
 }
 
 function initNode(e) {
-    switch(e.data.status) {
+    switch(this.status) {
     case 200:
-        window.nodeData = JSON.parse(e.data.responseText);
-            
-        thread.onmessage = initIcon;
+        window.nodeData = JSON.parse(this.responseText);
         
-        thread.postMessage({
-            action: "request",
-            request: {
-                "command": "get",
-                "target": "icon"
-            }
-        });
+        $.request.execute({
+            "command": "get",
+            "target": "icon"
+        }, initIcon);
 
         break;
-    case -1:
-        console.trace(e.data.exception);
     default:
-        alert(top.getMessage(this.status));
-
-        console.log(this.responseText && JSON.parse(this.responseText).error);
+        showMessage(this);
     }
 }
 
-thread.onmessage = initNode;
+$.request.execute({
+    "command": "get",
+    "target": "node",
+    "filter": "node"
+}, initNode);
 
-thread.postMessage({
-    action: "request",
-    request: {
-        "command": "get",
-        "target": "node"
-    }
-});
-
-</script>
+        </script>
 	
 	</body>
 	

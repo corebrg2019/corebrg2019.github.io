@@ -2,199 +2,223 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta http-equiv="Cache-Control" content="no-cache">
-		
-		<title>ITAhM</title>
-		
+		<meta http-equiv="Cache-Control" content="No-Cache">
+		<title>CeMS Dashboard</title>
 		<style>
-@import "css/itahm.css";
-@import "css/style.css";
-@import "/css/glyphicon.css";
+
+@import "/css/style.css";
 @import "/css/fa.css";
 
 body {
-	position: fixed; top: 0; right: 0; bottom: 0; left: 0;
-	background: url("img/world.png") no-repeat center center fixed;
-	background-size: cover;
-	display: flex; flex-direction: column;
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    padding: 0; margin: 0;
+    display: flex; flex-direction: column;
+    background-color: #424242;
 }
 
-body:not(.background)::before {
-	content: "";
-	position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-	background-color: rgba(0, 0, 0, 0.8);
-	z-index: -1;
+header {
+    position: absolute; top: 0; right: 0; left: 0; height: 300px;
+    display: flex; justify-content: space-between;
+    pointer-events: none;
 }
 
-body, input, button {
-	margin: 0;
-	padding: 0;
+nav {
+    flex: 1;
 }
 
-article {
-	flex: 1 1 auto;
-	position: relative;
+main {
+    flex: none;
+    display: flex;
+    overflow-x: auto;
+    color: #fff;
+    padding: 1em;
 }
 
-aside {
-	position: absolute; top: 0; bottom: 0; left: 0;
-	display: flex; flex-direction: column;
-	pointer-events: none;
-	width: 300px;
-	box-sizing: border-box;
-	padding: .5em;
-	color: #fff;
-	text-shadow: 1px 1px 1px #000;
+section {
+    flex: 1;
+    height: 100%;
+    position: relative;
+}
+
+section.empty {
+    flex: none;
+}
+
+.container {
+    position: relative;
+    height: 100%;
+    padding: 3em; box-sizing: border-box;
+    width: 300px;
+}
+
+.container.chart,
+.container.label {
+    overflow: hidden;
+    background-color: rgba(66, 66, 66, 0.6);
+}
+
+.container .title {
+    display: flex;
+    margin-bottom: 1em;
+}
+
+.container .title >span {
+    flex: 1;
+    text-align: center;
+    padding: 0.5em;
+    border-radius: 10px 10px 0 0;
+	box-shadow: 0 0 5px #fff inset;
+}
+
+.container .title >span:nth-child(1) {
+    background-color: #ff0000;
+    color: #ffffff;
+    text-shadow: 0 1px 1px #777777;
+}
+
+.container .title >span:nth-child(2) {
+    background-color: #ffa500;
+    color: #ffffff;
+    text-shadow: 0 1px 1px #777777;
+}
+
+.container .title >span:nth-child(3) {
+    background-color: #00ff00;
+    color: #ffffff;
+    text-shadow: 0 1px 1px #777777;
+}
+
+.container .summary {
+    display: flex; justify-content: space-around;
+}
+
+canvas {
+    transform: translateX(-25%);
+}
+
+iframe {
+    width: 100%; height: 100%;
+    border: none;
+}
+
+canvas {
+    height: 100%;
+}
+
+.list:not(:empty)::before {
+	content: attr(title);
+	display: block;
+	padding: .5em 2em; margin: 0.5em 0;
+	border-radius: 0.5em 0.5em 0 0;
+	font-weight: bold;
+    background-color: #000000;
+	text-shadow: 1px 1px 1px #777;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 ul {
 	list-style: none;
 	padding: 0; margin: 0;
+	font-size: 12px;
+	display: flex;
+	/*border-bottom: 1px solid #777;*/
+	cursor: pointer;
+    padding: 1px;
 }
 
-aside> .top {
-	flex: none;
-	height: 140px;
-	display: flex;
-	justify-content: space-around;
-	align-items: center;
+li {
+	flex: 1;
+	box-sizing: border-box;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: center;
+    transition: 0.5s linear;
+}
+
+li:last-of-type {
+    height: 2em;
+    background: linear-gradient(to right, rgb(0, 137, 123) 70%, rgb(246, 191, 38) 70% 90%, rgb(142, 36, 170) 90%);
+    position: relative;
+    color: #efefef;
+}
+
+li:last-of-type::after {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    content: attr(data-value);
+    font-weight: bolder;
+}
+
+li:last-of-type >div {
+    background-color: #424242;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    animation: gauge 2s cubic-bezier(0, 1, 1, 1.2);
 }
 
 nav {
-    flex: none;
-	padding: 0.5em;
-    color: #fff;
     display: flex;
-    background-color: #4d525a;
 }
 
-nav >* {
-    margin: 0 1px;
+nav >div {
+    flex: 1;
+    position: relative;
 }
 
-nav >span.icon {
-    font-family: 'Font Awesome 5 Free';
-    font-size: 2em;
-    cursor: pointer;
-    display: inline-block;
-    margin: 0 3px;
+nav >div:empty {
+    display: none;
 }
 
-nav >span.icon.checked {
-    color: #fcba30;
-}
-
-nav >span.icon:hover {
-    color: #0084ff;
-}
-
-nav >img {
-    width: 2em; height: 2em;
-}
-
-nav >label.switch {
-    font-size: 2em;
-}
-
-nav >select {
-    height: 2em;
-    vertical-align: top;
-    box-sizing: border-box;
-}
-
-nav >form >input {
-    height: 2em;
-    box-sizing: border-box;
-}
-
-#summary_list {
-	position: relative;
-	overflow-y: auto;
-	pointer-events: auto;
-}
-
-.list {
-	padding: .5em 1em;
-}
-
-.summary {
-	display: flex;
-	justify-content: space-between;
-	font-weight: bold;
-	margin: 3px 0;
-	padding: 0.5em;
-	background-color: rgba(255, 255, 255, 0.1);
-}
-
-.summary> li:first-child {
-	width: 120px;
-	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-header {
-	flex: none;
-	margin-bottom: 1em;
-	text-align: center;
-}
-
-header> ul {
-	display: flex;
-}
-
-header> ul> li {
-	padding: .5em;
-	border-radius: 10px 10px 0 0;
-	box-shadow: 0 0 5px #fff inset;
-	flex: 1;
-}
-
-header> ul> li:nth-child(1) {
-	background-color: #f00;
-}
-
-header> ul> li:nth-child(2) {
-	background-color: #fc0;
-}
-
-header> ul> li:nth-child(3) {
-	background-color: #0f0;
-}
-
-iframe.fullscreen {
-	border: none;
-	width: 100%; height: 100%;
-}
-
-iframe.top {
-	position: absolute; top: 0; right: 0; bottom: 0;
-	width: 320px; height: 100%;
-	border: none;
-}
-
-div.nav {
-	flex: none;
-	pointer-events: all;
-}
-
-div.nav::after {
-	content: "\2796";
-}
-
-div.nav.hide::after {
-	content: "\2795";
-}
-
-div.nav.hide +#summary_list {
-	display: none;
-}
-
-.pointer {
+nav >div:not(:empty)::before {
+    content: "\f2d2";
+    font: 20px "Font Awesome 5 Free";
+    position: absolute; top: 0; right: 0;
+    border-radius: 50%;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
+    color: #ffffff;
     cursor: pointer;
 }
 
-.link {
+nav >div::before:hover {
+    background-color: #0084ff;
+}
+
+aside {
+    position: absolute; top: 0; right: 0; left: 0;
+    padding: 1em;
+    text-align: center;
+    font-weight: bold;
+    color: #fff;
+    pointer-events: none;
+}
+
+#event {
+    cursor: pointer;
     pointer-events: all;
-    cursor: pointer;
+}
+
+#event::before,
+#event::after {
+    display: inline-flex; align-items: center; justify-content: center;
+    background-color: #ffa500;
+    border: 1px solid #c46c00;
+    height: 3em;
+    box-sizing: border-box;
+}
+
+#event::before {
+    content: attr(data-count);
+    width: 3em; 
+	border-radius: 50%;
+}
+
+#event::after {
+    content: attr(data-message);
+    padding: 0 1em 0 1em;
+	margin-left: 1em;
+	border-radius: 1.5em 0 0 1.5em;
 }
 
 /* bounce >> */
@@ -219,11 +243,6 @@ div.nav.hide +#summary_list {
 	width: 100%;
 	height: 50%;
 	animation: bounce 10s infinite;
-}
-
-.summary >.ball {
-	position: relative;
-	width: 40px; height: 40px;
 }
 
 .green.ball {
@@ -256,11 +275,7 @@ div.nav.hide +#summary_list {
 	top: 5%;
 	background: linear-gradient(to bottom, rgba(232,232,232,1), rgba(255,255,255,0));
 }
-/*
-.ball::after {
-	content: attr(data-value);
-}
-*/
+
 .bounce div:last-child {
 	position: absolute; bottom: 0;
 	width: 100%;
@@ -278,10 +293,6 @@ div.nav.hide +#summary_list {
 	background: rgba(100, 100, 100, 0.5);
 	animation: shadow 1s;
 	z-index: -1;
-}
-
-body:not(.exit) #exit {
-    display: none;
 }
 
 @keyframes bounce {
@@ -329,688 +340,311 @@ body:not(.exit) #exit {
 
 /* << bounce */
 
+.list:empty,
+body:not(.name) li:nth-child(1),
+body:not(.event) #event,
+body.name li:nth-child(2) {
+    display: none;
+}
+
+@keyframes gauge {
+    30% {
+		left: 0;
+	}
+}
+
 		</style>
+		
 		<script>
-// public
-function moveStage(id) {
-    if (id) {
-        window.sessionStorage.setItem("stage_id", String(id));
-    } else {
-        window.sessionStorage.removeItem("stage_id");
+
+function onEvent (event) {
+    if (event.level == 2 && $.sound) {
+        try {
+            $.sound.play();
+        } catch (e) {
+            console.log(e);
+        };
     }
 
-    window.location.reload();
+    $.event.dataset.count = (count => {
+        if (isNaN(count)) {
+            return "9+";
+        } else {
+            return ++count > 9? "9+": count;
+        }
+    }) (Number($.event.dataset.count));
+
+    $.event.dataset.message = `${event.name || event.ip || ""} ${event.message}`;
+
+    document.body.classList.add("event");
+
+    $.request.execute({
+        command: "get",
+        target: "node"
+	}, function () {
+		switch (this.status) {
+        case 200:
+            $.nodeData = JSON.parse(this.responseText);
+            
+            requestAnimationFrame(update);
+
+            break;
+        default:
+            showMessage(this);
+		}
+    });	
 }
 
-function onSelectStatus(e) {
-    window.sessionStorage.setItem("list_status", this.id);
+function update() {
+    const count = {
+            shutdown: 0,
+            critical: 0,
+            normal: 0
+        };
 
-    top.selectMenu("node");
-}
+    var node;
 
-function getNodeData() {
-    return $.nodeData;
-}
+    $.labelMap = {};
+    
+    for (let id in $.nodeData) {
+        node = $.nodeData[id];
 
-function getPositionData() {
-    return $.positionData;
-}
+        if ("protocol" in node) {
+            if ("status" in node && !node.status) {
+                count.shutdown++;
 
-function getLinkData() {
-    return $.linkData;
-}
+                parseLabel(node.label, "shutdown");
+            }
+            else if ("critical" in node && node.critical) {
+                count.critical++;
+                
+                parseLabel(node.label, "critical");
+            }
+            else {
+                count.normal++;
 
-function getPathData() {
-    return $.pathData;
-}
-
-function getIconData() {
-    return $.iconData;
-}
-
-function getSettingData() {
-    return $.settingData;
-}
-
-function getMonitorList() {
-    return $.monitorList;
-}
-
-function getNodeList(status) {
-    switch(status) {
-    case "shutdown":
-        return $.shutdownList;
-    case "critical":
-        return $.criticalList;
+                parseLabel(node.label, "normal");
+            }
+        }
     }
 
-    return $.nodeList;
+    document.getElementById("normal").textContent = count.normal;
+    document.getElementById("critical").textContent = count.critical;
+    document.getElementById("shutdown").textContent = count.shutdown;
+
+    updateChart(count.normal, count.critical, count.shutdown, -Math.max(count.normal, count.critical, count.shutdown));
 }
 
-function showMessage(data) {
-    switch (data.status) {
+function parseLabel (label, status) {
+    if (label) {
+        label.split(",").forEach(function (label) {
+            if (!(label in $.labelMap)) {
+                $.labelMap[label] = {
+                    shutdown: 0,
+                    critical: 0,
+                    normal: 0
+                }
+            }
+
+            $.labelMap[label][status]++;
+        });
+    }
+}
+
+function onRestore(type) {
+    const container = document.getElementById(type);
+
+    if (container) {
+        const frame = container.querySelector("iframe") || container.appendChild(document.createElement("iframe"));
+
+        frame.src = `/${type}.html`;
+    }
+}
+
+function showMessage(xhr) {
+    switch (xhr.status) {
     case 401:
         alert("Notice!\n\n"+ "세션 만료.");
 
         break;
     default:
-        alert("Error!\n\n"+ "오류코드: "+ data.status);
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
     }
 
     try {
-        console.log(JSON.parse(data.responseText).error);
+        console.log(JSON.parse(xhr.responseText).error);
     } catch (e) {}
 }
+
 		</script>
 	</head>
-	
-	<body class="loading name">
-        <nav>
-            <span class="icon" title="편집 모드" id="edit">
-                &#xf013;
-            </span>
-            <span class="icon" title="지도 모드" id="mode_branch">
-                &#xf3c5;
-            </span>
-            <span class="icon" title="3D 모드" id="mode_3d">
-                &#xf1b2;
-            </span>
-            <span class="icon" title="IP주소 보기" id="display">
-                &#xf074;
-            </span>
-            <span class="icon" title="노드 검색" id="search">
-                &#xf002;
-            </span>
-            <span class="icon" title="상위 이동" id="exit">
-                &#xf2f5;
-            </span>
-        </nav>
-		<article>
-			<aside>
-				<header>
-					<ul>
-						<li>장애
-						<li>임계
-						<li>정상
-					</ul>
-				</header>
-				
-				<div class="top">
-					<div class="bounce link">
-						<div id="shutdown" class="ball red"></div>
-						<div></div>
-					</div>
-					<div class="bounce link">
-						<div id="critical"  class="ball orange"></div>
-						<div></div>
-					</div>
-					<div class="bounce link">
-						<div id="normal"  class="ball green"></div>
-						<div></div>
-					</div>
-				</div>
-				<div class="nav pointer"></div>
-				<div id="summary_list"></div>	
-			</aside>
-            <iframe id="map" class="fullscreen"></iframe>
-            <iframe id="branch" class="fullscreen"></iframe>
-            <iframe class="top"></iframe>
-		</article>
 
+	<body class="name loading">
+        <nav>
+            <div id="dc" title="새창 열기"><iframe src="/dc.html"></iframe></div>
+            <div id="topology" title="새창 열기"><iframe src="/topology.html"></iframe></div>
+            <div id="branch" title="새창 열기"><iframe src="/branch.html"></iframe></div>
+            <div></div>
+        </nav>
+        <header>
+            <div class="container chart">
+                <canvas id="chart"></canvas>
+            </div>
+            <div class="container summary">
+                <div class="title">
+                    <span data-color="#00ff00">장애</span>
+                    <span>임계</span>
+                    <span>정상</span>
+                </div>
+                <div class="summary">
+                    <div class="bounce">
+                        <div id="shutdown" class="ball red"></div>
+                        <div></div>
+                    </div>
+                    <div class="bounce">
+                        <div id="critical"  class="ball orange"></div>
+                        <div></div>
+                    </div>
+                    <div class="bounce">
+                        <div id="normal"  class="ball green"></div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="container label">
+                <canvas id="label"></canvas>
+            </div>
+        </header>
+        <main>
+            <section id="responseTime" data-func="toMillsString" data-chart="/chart/responseTime.html">
+                <div class="list" title="응답시간"></div>
+            </section>
+            <section id="hrProcessorLoad" data-func="toPercentageString" data-chart="/chart/processor.html">
+                <div class="list" title="프로세서 로드"></div>
+            </section>
+            <section id="hrStorageMemory" data-func="toBytesString" data-chart="/chart/memory.html">
+                <div class="list" title="메모리 사용량"></div>
+            </section>
+            <section id="hrStorageMemory_rate" data-func="toBytesString" data-chart="/chart/memory.html">
+                <div class="list" title="메모리 사용율(%)"></div>
+            </section>
+            <section id="hrStorageUsed" data-func="toBytesString" data-chart="/chart/storage.html">
+                <div class="list" title="저장공간 사용량"></div>
+            </section>
+            <section id="hrStorageUsed_rate" data-func="toBytesString" data-chart="/chart/storage.html">
+                <div class="list" title="저장공간 사용율(%)"></div>
+            </section>
+            <section id="ifInOCtets" data-func="toBPSString" data-chart="/chart/throughput.html">
+                <div class="list" title="수신 사용량"></div>
+            </section>
+            <section id="ifInOCtets_rate" data-func="toBPSString" data-chart="/chart/throughput.html">
+                <div class="list" title="수신 사용율(%)"></div>
+            </section>
+            <section id="ifOutOCtets" data-func="toBPSString" data-chart="/chart/throughput.html">
+                <div class="list" title="송신 사용량"></div>
+            </section>
+            <section id="ifOutOCtets_rate" data-func="toBPSString" data-chart="/chart/throughput.html">
+                <div class="list" title="송신 사용율(%)"></div>
+            </section>
+            <section id="ifInErrors" data-func="toErrorString" data-chart="/chart/error.html" data-zero="true">
+                <div class="list" title="수신 오류"></div>
+            </section>
+            <section id="ifoutErrors" data-func="toErrorString" data-chart="/chart/error.html" data-zero="true">
+                <div class="list" title="송신 오류"></div>
+            </section>
+        </main>
+        <aside>
+            <span id="event" data-count="0" data-message="No message."></span>
+        </aside>
         <div class="bg_loading"></div>
 
-        <script src="/js/ITAhM.js"></script>
-        <script src="/js/icon.js"></script>
+        <script>
+if (opener) {
+    window.account = opener.account;
+} else if (top !== window && top.account) {
+    window.account = top.account;
+} else {
+    throw window.location.replace("/warning.html");
+}
+        </script>
+        <script src="/js/request.js"></script>
+        <script src="/js/import/chart.js"></script>
+        <script src="/js/import/chartPluginLabels.js"></script>
+        <script src="/dashboard/dashboard.js"></script>
 		<script>
 
-const UPPER_POS = {
-		x: 0,
-		y: 0
-    };
 const $ = {
-    thread: new Worker("/js/thread.js"),
-    upper: window.sessionStorage.getItem("stage_id") && Number(window.sessionStorage.getItem("stage_id")) || undefined,
-    iconData: ITAhM.iconData,
-    monitorList: [], // 현재 스테이지의 모니터링 대상 노드
-    nodeList: [], // 현재 스테이지의 모든 노드
-    shutdownList: [],
-    criticalList: []
-};
+        request: new Request(),
+        event: document.getElementById("event"),
+        labelMap: {}
+    };
 
-$.thread.postMessage({
-    action: "initialize",
-    agent: window.localStorage.getItem("agent")
-});
+document.getElementById("dc").onclick = 
+document.getElementById("topology").onclick = 
+document.getElementById("branch").onclick = function (e) {
+    const frame = this.querySelector("iframe");
 
-document.body.querySelector("div.nav").onclick = function (e) {
-	this.classList.toggle("hide");
+    this.removeChild(frame);
+
+    window.open(frame.src, "_blank",
+        `left=${window.innerWidth /4},top=${window.innerHeight /4},width=${window.innerWidth /2},height=${window.innerHeight /2}`);
 }
 
-document.getElementById("edit").onclick = function () {
-	window.location.href = "/map_edit.html";
+document.getElementById("event").onclick = e => {
+    document.body.classList.remove("event");
+
+    $.event.dataset.count = 0;
 };
-
-document.getElementById("search").onclick = function (e) {
-    const keyword = prompt("노드 이름 또는 IP주소를 입력하세요.");
-    
-    if (!keyword) {
-        return;
-    }
-
-    var
-        found = false,
-        node;
-
-    for (let id in $.nodeData) {
-        node = $.nodeData[id];
-
-        if (keyword === node.ip || keyword === node.name) {
-            const pos = $.positionData[id];
-            
-            if (pos.parent) {
-                window.sessionStorage.setItem("stage_id", String(pos.parent));
-            } else {
-                window.sessionStorage.removeItem("stage_id");
-            }
-
-            window.sessionStorage.setItem("focus_id", String(id));
-
-            window.location.reload();
-
-            found = true;
-
-            break;
-        }
-    }
-
-    if (!found) {
-        alert("Information.\n\n검색 결과가 없습니다.");
-    }
-};
-
-function findParentFromStage(parent) {
-	for (let tmp; parent; parent = tmp) {
-		if (!(parent in $.positionData)) {
-			return;
-		}
-
-		tmp = $.positionData[parent].parent;
-		
-		if (tmp === $.upper) {
-			return parent;
-		}
-	}
-}
-
-(() => {
-	const labelMap = {};
-
-	function createStatusItem(label, count) {
-		const ul = document.createElement("ul");
-
-		ul.appendChild(document.createElement("li")).textContent = label;
-		ul.appendChild(document.createElement("li")).textContent = count.shutdown;
-		ul.appendChild(document.createElement("li")).textContent = count.critical;
-		ul.appendChild(document.createElement("li")).textContent = count.normal;
-		
-		ul.className = "summary";
-		
-		return ul;
-	}
-
-	window.parseLabel = (label, status) => {
-		if (label) {
-			label.split(",").forEach(function (label) {
-				if (!(label in labelMap)) {
-					labelMap[label] = {
-						shutdown: 0,
-						critical: 0,
-						normal: 0
-					}
-				}
-
-				labelMap[label][status]++;
-			});
-		}
-	};
-
-	window.buildLabel = () => {
-		const df = document.createDocumentFragment();
-
-		for (let label in labelMap) {
-			df.appendChild(createStatusItem(label, labelMap[label]));
-		}
-
-		return df;
-	};
-})();
-
-(button => {
-    button.onclick = function (e) {
-        const option = button.classList.contains("checked")? "name": "address";
-
-        document.body.classList.add("loading");
-
-        $.thread.onmessage = function (e) {
-            switch (e.data.status) {
-            case 200:
-                $.settingData.display = option;
-
-                button.classList.toggle("checked");
-
-                document.querySelector("iframe.top").contentWindow.display(option);
-                
-                try {
-                    document.getElementById("map").contentWindow.display(option);
-                } catch (e) {}
-            
-                document.body.classList.remove("loading");
-
-                break;
-            case -1:
-                console.trace(e.data.exception);
-            default:
-                showMessage(e.data);
-            }
-        };
-
-        $.thread.postMessage({
-            action: "request",
-            request: {
-                command: "set",
-                target: "setting",
-                key: "display",
-                value: option
-            }
-        });
-    };
-})(document.getElementById("display"));
-
-(button => {
-    button.onclick = function (e) {
-        const mode = button.classList.contains("checked")? "default": "branch";
-
-        document.body.classList.add("loading");
-
-        $.thread.onmessage = function (e) {
-            switch (e.data.status) {
-            case 200:
-                window.location.reload();
-            
-                break;
-            case -1:
-                console.trace(e.data.exception);
-            default:
-                showMessage(e.data);
-            }
-        };
-
-        $.thread.postMessage({
-            action: "request",
-            request: {
-                command: "set",
-                target: "setting",
-                key: "mapMode",
-                value: mode
-            }
-        });
-    };
-})(document.getElementById("mode_branch"));
-
-(button => {
-    button.onclick = function (e) {
-        const mode = button.classList.contains("checked")? "default": "3d";
-
-        document.body.classList.add("loading");
-
-        $.thread.onmessage = function (e) {
-            switch (e.data.status) {
-            case 200:
-                window.location.reload();
-
-                break;
-            case -1:
-                console.trace(e.data.exception);
-            default:
-                showMessage(e.data);
-            }
-        };
-    
-        $.thread.postMessage({
-            action: "request",
-            request: {
-                command: "set",
-                target: "setting",
-                key: "mapDim",
-                value: mode
-            }
-        });
-    };
-})(document.getElementById("mode_3d"));
 
 function initialize() {
-    const
-        SHUTDOWN = 0,
-        CRITICAL = 1,
-        NORMAL = 2;
-    var
-        sCount = 0,
-        cCount = 0,
-        nCount = 0,
-        node, pos, parent, status;
-    
-    if ($.upper) {
-        document.getElementById("exit").onclick = e => moveStage($.positionData[$.upper].parent);
-
-        document.body.classList.add("exit");
-    }
-
-    for (let id in $.nodeData) {
-        node = $.nodeData[id];
-        pos = $.positionData[id];
-        
-        // 동기화 안된 node의 pos 정보가 없음
-        if (!pos) {
-            $.positionData[id] = pos = {
-                x: 0,
-                y: 0
-            };
-        }
-        
-        // 상위 그룹이 삭제 되었음
-        if (pos.parent && !(pos.parent in $.nodeData)) {
-            pos.parent = undefined;
-        }
-
-        if (pos.parent === $.upper) {
-            $.nodeList.push(id);
-
-            if ("protocol" in node) {
-                $.monitorList.push(id);
-
-                if ("status" in node && !node.status) {
-                    status = "shutdown";
-                    
-                    $.shutdownList.push(id);
-
-                    sCount++;
-
-                    parseLabel(node.label, "shutdown");
-                }
-                else if ("critical" in node && node.critical) {
-                    status = "critical";
-                    
-                    $.criticalList.push(id);
-
-                    cCount++;
-                    
-                    parseLabel(node.label, "critical");
-                }
-                else {
-                    status = "normal";
-
-                    nCount++;
-
-                    parseLabel(node.label, "normal");
-                }
-            }
-        }
-        else if (parent = findParentFromStage(pos.parent)) {
-            // 하위
-            if ("protocol" in node) {
-                $.monitorList.push(id);
-
-                if ("status" in node && !node.status) {
-                    $.shutdownList.push(parent);
-
-                    sCount++;
-                    
-                    parseLabel(node.label, "shutdown");
-                }
-                else if ("critical" in node && node.critical) {
-                    $.criticalList.push(parent);
-
-                    cCount++;
-                    
-                    parseLabel(node.label, "critical");
-                }
-                else {
-                    nCount++;
-                    
-                    parseLabel(node.label, "normal");
-                }
-            }
-        }
-    }
-
-    document.getElementById("normal").textContent = nCount;
-    document.getElementById("critical").textContent = cCount;
-    document.getElementById("shutdown").textContent = sCount;
-
-    document.getElementById("normal").onclick =
-    document.getElementById("critical").onclick =
-    document.getElementById("shutdown").onclick = onSelectStatus;
-
-    document.getElementById("summary_list").appendChild(buildLabel());
-    
-    if ($.settingData.mapMode === "branch") {
-        if (window.sessionStorage.getItem("focus_id") || $.upper) {
-            document.getElementById("map").src = "/map.html";
-        } else {
-            document.getElementById("map").src = "/map_branch.html";
-        }
-    } else {
-        document.getElementById("map").src = "/map.html";
-    }
-    
-    document.querySelector("iframe.top").src = "/top.html";
-
-    window.onEvent = event => {
-		if ($.timer) {
-			clearTimeout($.timer);
-		}
-        
-        if (event.id) {
-            $.timer = setTimeout(() => {
-                requestAnimationFrame(t => {
-                    const
-                        id = String(event.id),
-                        pos = $.positionData[id];
-
-                    if (pos.parent) {
-                        window.sessionStorage.setItem("stage_id", String(pos.parent));
-                    } else {
-                        window.sessionStorage.removeItem("stage_id");
-                    }
-                    
-                    window.sessionStorage.setItem("focus_id", id);
-
-                    window.location.reload();
-                });
-            }, 1000);
-        }
-	};
+    update();
 
     document.body.classList.remove("loading");
+
+    getTop();
+
+    $.request.listen(onEvent);
 }
-
-function initNode(e) {
-    switch(e.data.status) {
-        case 200:
-            $.nodeData = JSON.parse(e.data.responseText);
-            
-            $.thread.onmessage = initPath;
-
-            $.thread.postMessage({
-                action: "request",
-                request: {
-                    command: "get",
-                    target: "path"
-                }
-            });
-
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
-    }
-}
-
-function initPath(e) {
-    switch(e.data.status) {
-        case 200:
-            $.pathData = JSON.parse(e.data.responseText);
-            
-            $.thread.onmessage = initLink;
-            
-            $.thread.postMessage({
-                action: "request",
-                request: {
-                    command: "get",
-                    target: "link"
-                }
-            });
-            
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
-    }
-}
-
-function initLink(e) {
-    switch(e.data.status) {
-        case 200:
-            $.linkData = JSON.parse(e.data.responseText);
-            
-            $.thread.onmessage = initPosition;
-            
-            $.thread.postMessage({
-                action: "request",
-                request: {
-                    command: "get",
-                    target: "position",
-                    name: "position"
-                }
-            });
+function initNode() {
+    switch (this.status) {
+    case 200:
+        $.nodeData = JSON.parse(this.responseText);
         
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
+        initialize();
+
+        break;
+    default:
+        showMessage(this);
     }
 }
 
-function initPosition(e) {
-    switch(e.data.status) {
-        case 200:
-            $.positionData = JSON.parse(e.data.responseText);
+function initSetting () {
+    switch (this.status) {
+    case 200:
+        const settingData = JSON.parse(this.responseText);
 
-            $.thread.onmessage = initSetting;
-            
-            $.thread.postMessage({
-                action: "request",
-                request: {
-                    command: "get",
-                    target: "setting"
-                }
-            });
-            
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
+        if (!("mute" in settingData) || settingData.mute === "false") {
+            $.sound = new Audio("siren.mp3");
+        }
+
+        $.request.execute({
+            command: "get",
+            target: "node"
+        }, initNode);
+
+        init
+        break;
+    default:
+        showMessage(this);
     }
 }
 
-function initSetting(e) {
-    switch(e.data.status) {
-        case 200:
-            $.settingData = JSON.parse(e.data.responseText);
-            
-            if ("background" in $.settingData) {
-                document.body.style.backgroundImage = "url("+ $.settingData.background +")";
-
-                document.body.classList.add("background");
-            }
-
-            if ("display" in $.settingData && $.settingData.display === "address") {
-                document.getElementById("display").classList.add("checked");
-            }
-
-            if ("mapMode" in $.settingData) {
-                if ($.settingData.mapMode === "branch") {
-                    document.getElementById("mode_branch").classList.add("checked");
-                } else {
-
-                }
-            } else {
-
-            }
-
-            if ("mapDim" in $.settingData) {
-                if ($.settingData.mapDim == "3d") {
-                    document.getElementById("mode_3d").classList.add("checked");
-                } else {
-
-                }
-            } else {
-
-            }
-
-            $.thread.onmessage = initIcon;
-            
-            $.thread.postMessage({
-                action: "request",
-                request: {
-                    command: "get",
-                    target: "icon"
-                }
-            });
-
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
-    }
-}
-
-function initIcon(e) {
-    switch(e.data.status) {
-        case 200:
-            const iconData = JSON.parse(e.data.responseText);
-
-            for (let type in iconData) {
-                $.iconData[type] = iconData[type];
-            }
-
-            initialize();
-            
-            break;
-        case -1:
-            console.trace(e.data.exception);
-        default:
-            showMessage(e.data);
-    }
-}
-
-$.thread.onmessage = initNode;
-
-$.thread.postMessage({
-    action: "request",
-    request: {
-        command: "get",
-        target: "node"
-    }
-});
+$.request.execute({
+    command: "get",
+    target: "setting"
+}, initSetting);
 
 		</script>
 	
 	</body>
-	
 </html>

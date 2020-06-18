@@ -2,8 +2,6 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta http-equiv="Content-Script-Type" content="text/javascript">
-		<meta http-equiv="Content-Style-Type" content="text/css">
 		<title>Top @ ITAhM</title>
 		
 		<style>
@@ -229,12 +227,6 @@ function initSection() {
     let obj;
 
     window.topSetting.forEach(obj => {
-        if (obj.count > 0) {
-            window.request.resource[obj.id] = {
-                count: obj.count
-            }
-        }
-
         df.appendChild(document.getElementById(obj.id))
             .querySelector("input[type=number]").value = obj.count;
     });
@@ -325,7 +317,7 @@ function createTopItem(value, toString, chart) {
 	
 	item.onclick = function () {
         window.sessionStorage.setItem("node_id", value.id);
-        window.sessionStorage.setItem("previous", "/dashboard.html");
+        window.sessionStorage.setItem("previous", "/itahm.html");
 
         parent.location.href = "/resource.html";
 	};
@@ -334,7 +326,7 @@ function createTopItem(value, toString, chart) {
 		e.stopPropagation();
         
         window.sessionStorage.setItem("node_id", value.id);
-        window.sessionStorage.setItem("previous", "/dashboard.html");
+        window.sessionStorage.setItem("previous", "/itahm.html");
         window.sessionStorage.setItem("chart", chart);
         window.sessionStorage.setItem("index", value.index);
     
@@ -351,20 +343,21 @@ function display() {
     }
 }
 
-function showMessage(data) {
-    switch (data.status) {
+function showMessage(xhr) {
+    switch (xhr.status) {
     case 401:
         alert("Notice!\n\n"+ "세션 만료.");
 
         break;
     default:
-        alert("Error!\n\n"+ "오류코드: "+ data.status);
+        alert("Error!\n\n"+ "오류코드: "+ xhr.status);
     }
 
     try {
-        console.log(JSON.parse(data.responseText).error);
+        console.log(JSON.parse(xhr.responseText).error);
     } catch (e) {}
 }
+
 		</script>
 		
 	</head>
@@ -425,23 +418,16 @@ function showMessage(data) {
             </section>
 		</main>
 		
+		<script src="/js/request.js"></script>
 		<script>
 
 const INTERVAL = 8000;
 const $ = {
+    request: new Request(),
     nodeData: parent.getNodeData(),
     settingData: parent.getSettingData(),
     nodeList : parent.getMonitorList()
 };
-
-var
-    request = {
-		command: "get",
-		target: "top",
-        list: $.nodeList,
-        resource: {
-        }
-	};
 
 if ("display" in $.settingData && $.settingData.display !== "name") {
 	document.body.classList.remove("name");
@@ -463,7 +449,6 @@ document.querySelector("header span.apply").onclick = function (e) {
     this.disabled = true;
 
     window.topSetting = [];
-    window.request.resource = {};
 
     [].forEach.call(document.querySelector("main").querySelectorAll("section"), section => {
 		section.removeAttribute("draggable");
@@ -474,41 +459,27 @@ document.querySelector("header span.apply").onclick = function (e) {
             id: section.id,
             count: count
         });
-
-        if (count > 0) {
-            window.request.resource[section.id] = {
-                count: count
-            }
-        }
 	});
 
-    (thread => {
-        const value = JSON.stringify(window.topSetting);
+    $.request.execute({
+        command: "set",
+        target: "setting",
+        key: "top",
+        value: JSON.stringify(window.topSetting)
+    }, function () {
+        switch (this.status) {
+            case 200:
+                document.body.classList.remove("edit");
 
-        thread.postMessage([window.localStorage.getItem("agent"), {
-            command: "set",
-            target: "setting",
-            key: "top",
-            value: value
-        }]);
+                break;
+            default:
+                showMessage(this);
+        }
 
-        thread.onmessage = e => {
-            switch (e.data.status) {
-                case 200:
-                    document.body.classList.remove("edit");
+        this.disabled = false;
 
-                    break;
-                case -1:
-                    console.trace(e.data.exception);
-                default:
-                    showMessage(e.data);
-            }
-
-            this.disabled = false;
-
-            reload();
-        };
-    })(new Worker("/js/post_request.js"));
+        reload();
+    });
 };
 
 document.querySelector("header span.cancel").onclick = e => {
@@ -526,26 +497,26 @@ document.querySelector("header span.cancel").onclick = e => {
 initialize();
 
 function reload() {
-	top.postRequest(window.request, function () {
+    $.request.execute({
+        command: "get",
+		target: "top",
+        count: 5
+    }, function () {
 		switch (this.status) {
 		case 200:
 			const topData = JSON.parse(this.responseText);
 
             [].forEach.call(document.querySelector("main").querySelectorAll("section"), section => {
-                setTop(section, topData[section.id]);
+                setTop(section, topData[section.id.toUpperCase()]);
             });
 			
 			break;
 		default:
-			alert(top.getMessage(this.status));
-
-			console.log(this.responseText && JSON.parse(this.responseText).error);
+			showMessage(this);
 		}
 	});
 
-	window.timer = setTimeout(() => {
-		requestAnimationFrame(reload);
-	}, INTERVAL);
+	window.timer = setTimeout(() => requestAnimationFrame(reload), INTERVAL);
 }
 
 		</script>

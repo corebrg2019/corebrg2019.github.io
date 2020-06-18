@@ -2,8 +2,6 @@
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<meta http-equiv="Content-Script-Type" content="text/javascript">
-		<meta http-equiv="Content-Style-Type" content="text/css">
 		<title>icon @ ITAhM</title>
 		
 		<style>
@@ -172,6 +170,21 @@ function initIcon(iconData) {
 	return df;
 }
 
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
         </script>
 	</head>
 	
@@ -197,9 +210,14 @@ function initIcon(iconData) {
         
         <script src='/js/ITAhM.js'></script>
         <script src='/js/icon.js'></script>
+        <script src='/js/request.js'></script>
 		<script>
 
-var list = document.getElementById("list"),
+const $ = {
+        request: new Request()
+    };
+
+var 
 	icon = document.querySelector(".icon"),
 	group = document.querySelector(".group"),
     iconData = ITAhM.iconData;
@@ -208,7 +226,7 @@ document.getElementById("add").onclick = e => {
     top.showDialog.call(window, "/dialog/icon.html");
 };
 
-top.postRequest({
+$.request.execute({
     command: "get",
     target: "icon"
 }, function () {
@@ -220,16 +238,14 @@ top.postRequest({
             window.iconData[type] = iconData[type];
         }
 
-        case 204:
-        window.list.appendChild(initIcon(window.iconData));
+    case 204:
+        document.getElementById("list").appendChild(initIcon(window.iconData));
 
         document.body.classList.remove("loading");
 
         break;
     default:
-        alert(top.getMessage(this.status));
-
-        console.log(this.responseText && JSON.parse(this.responseText).error);
+        showMessage(this);
     }
 });
 

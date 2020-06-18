@@ -8,6 +8,7 @@
 		
 		<style>
 @import "css/style.css";
+@import "css/fa.css";
 
 body {
 	width: 1024px;
@@ -181,55 +182,14 @@ body:not(.loading) .bg_loading {
   box-shadow:none
 }
 
-/* switch button*/
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 2em;
-    height: 1em;
-    font-size: 20px;
+.logo {
+	margin: 0 1em;
+	vertical-align: bottom;
 }
 
-.switch >input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.switch >.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 0.5em;
-}
-
-.switch >.slider:before {
-    position: absolute;
-    content: "";
-    height: 0.6em;
-    width: 0.6em;
-    left: 0.2em;
-    bottom: 0.2em;
-    background-color: #fff;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked +.slider {
-    background-color: #424242;
-}
-
-input:focus +.slider {
-    box-shadow: 0 0 1px #424242;
-}
-
-input:checked + .slider:before {
-    transform: translateX(1em);
+span.logo {
+    font: 24px "Font Awesome 5 Free";
+    color: #0084ff;
 }
 
 		</style>
@@ -254,12 +214,29 @@ function createItem(src, key, data, func) {
 	return li;
 }
 
+function showMessage(xhr) {
+    switch (xhr.status) {
+    case 401:
+        alert("Notice!\n\n"+ "세션 만료.");
+
+        break;
+    default:
+        alert(`Error!\n\n오류코드 ${xhr.status}.`);
+    }
+
+    try {
+        console.log(JSON.parse(xhr.responseText).error);
+    } catch (e) {}
+}
+
 		</script>
 	</head>
 	
 	<body>
 		<h2>
-			<img width="24px" height="24px" src="/img/information.png" class="logo">
+			<span class="logo">
+                &#xf05a;
+            </span>
 			정보
 		</h2>
 		<div id="information" class="box container loading">
@@ -284,7 +261,9 @@ function createItem(src, key, data, func) {
 			<div class="bg_loading"></div>
 		</div>
 		<h2>
-			<img width="24px" height="24px" src="/img/run.png" class="logo">
+			<span class="logo">
+                &#xf013;
+            </span>
 			동작
 		</h2>
 		<div id="common" class="box container loading">
@@ -347,11 +326,16 @@ function createItem(src, key, data, func) {
 		
 		<script src="js/ITAhM.js"></script>
 		<script src="js/object.js"></script>
-		<script src="js/md5.js"></script>
+        <script src="js/md5.js"></script>
+        <script src="js/request.js"></script>
 		<script>
 
+const $ = {
+        request: new Request()
+    };
+
 (function(container) {
-	top.postRequest({
+	$.request.execute({
 		command: "get",
         target: "information"
 	}, function () {
@@ -373,15 +357,13 @@ function createItem(src, key, data, func) {
 
 				break;
 			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
+				showMessage(this);
 		}
 	});
 }) (document.getElementById("information"));
 
 (function(container) {
-	top.postRequest({
+	$.request.execute({
 		command: "get",
 		target: "config"
 	}, function () {
@@ -399,9 +381,7 @@ function createItem(src, key, data, func) {
 
 				break;
 			default:
-				alert(top.getMessage(this.status));
-
-				console.log(this.responseText && JSON.parse(this.responseText).error);
+                showMessage(this);
 		}
 	});
 }) (document.getElementById("common"));

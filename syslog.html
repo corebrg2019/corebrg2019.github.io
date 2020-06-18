@@ -6,7 +6,8 @@
 		<title>List @ ITAhM</title>
 		
 		<style>
-@import url("/css/glyphicon.css");
+@import "/css/glyphicon.css";
+@import "/css/fa.css";
 
 body {
     font: 12px "맑은 고딕", Tahoma, Arial;
@@ -192,6 +193,19 @@ div.find input {
 #list li.debug {
     background-color: #b3bac2;
 }
+
+#save {
+    font-family: "Font Awesome 5 Free";
+    position: absolute; left: 10px; bottom: 10px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+#save:hover {
+    color: #fcba30;
+    transition: color 0.5s linear;
+}
+
 /*button glyphicon*/
 span.glyph {
     display: inline-block;
@@ -438,9 +452,9 @@ span.glyph.export::before {
                 </ul>
             </div>
 			<footer>
-				<a id="save" title="CSV 파일로 저장">
-					<img src="/img/download.png" width="12" height="12">
-					Download
+                
+				<a id="save" title="CSV 내보내기">
+					&#xf019; Download
 				</a>
 			</footer>
 		</article>

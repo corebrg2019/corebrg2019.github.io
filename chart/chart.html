@@ -9,7 +9,7 @@
 		<style>
 
 @import "/css/itahm.css";
-
+@import "/css/fa.css";
 body {
 	position: fixed; top: 10px; right: 10px; bottom: 10px; left: 10px;
 	margin: 0; padding: 0;
@@ -201,82 +201,34 @@ footer span.label::after {
 	background-color: #fff;
 }
 
-/* close-container */
-.close-container {
-    position: relative;
-    width: 25px;
-    height: 25px;
-    cursor: pointer;
+nav {
+    display: flex;
+    font: 20px "Font Awesome 5 Free";
+    color: #ffffff;
 }
-
-.close-container::before {
-    display: block;
-    content: "";
-    height: 3px;
-    width: 25px;
-    position: absolute;
-    margin-top: 12px;
-    background-color: #F4A259;
-    border-radius: 2px;
-    transform: rotate(45deg);
-    transition: all .3s ease-in;
-}
-
-.close-container::after {
-    display: block;
-    content: "";
-    height: 3px;
-    width: 25px;
-    position: absolute;
-    margin-top: 12px;
-    background-color: #F4A259;
-    border-radius: 2px;
-    transform: rotate(-45deg);
-    transition: all .3s ease-in;
-}
-
-.close-container label{
-    color: #fff;
-    font-size: .4em;
-    transition: all .3s ease-in;
-    opacity: 0;
-    pointer-events: none;
-    position: absolute;
-    top: 110%;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.close-container:hover::before {
-    transform: rotate(-45deg);
-    background-color: #0084ff;
-}
-.close-container:hover::after {
-    transform: rotate(45deg);
-    background-color: #0084ff;
-}
-.close-container:hover label{
-    opacity: 1;
-}
-/* close-container */
 
 nav >span {
-    width: 30px; height: 30px;
-    display: inline-block;
     border-radius: 50%;
-    line-height: 30px;
-    text-align: center;
-    background-color: #0084ff;
-    border: 1px solid #0084ff;
+    display: flex; width: 32px; height: 32px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 132, 255, 0.5);
+    border-color: #0084ff;
     cursor: pointer;
 }
 
 nav >span:hover {
-    background-color: rgba(0, 132, 255, 0.5);
+    background-color: #0084ff;
 }
 
-nav img {
-    vertical-align: middle;
+#close {
+    font: 20px "Font Awesome 5 Free";
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#close:hover {
+    transform: scale(1.2);
 }
 
 .layout,
@@ -463,18 +415,16 @@ function clear(e) {
 		<header>
 			<nav>
                 <span id="set" title="기간 설정">
-                    <img width="16" height="16" src="/img/btn/calendar.png">
+                    &#xf073;
                 </span>
                 <span id="realtime" title="실시간 차트">
-                    <img width="16" height="16" src="/img/btn/realtime.png">
+                    &#xf2f1;
                 </span>
-                <span id="save" title="CSV 파일로 저장">
-                    <img width="16" height="16" src="/img/btn/download.png">
+                <span id="save" title="CSV 내보내기">
+                    &#xf019;
                 </span>
             </nav>
-            <div class="close-container" id="close">
-                <label>CLOSE</label>
-            </div>
+            <div id="close" title="닫기">&#xf00d;</div>
 		</header>
 		
 		<footer>
@@ -554,7 +504,7 @@ document.getElementById("realtime").onclick = function () {
 };
 
 document.getElementById("close").onclick = function () {
-    window.location.href = window.sessionStorage.getItem("previous");
+    window.location.replace("/chart/summary.html");
 };
 
 document.getElementById("save").onclick = function () {
